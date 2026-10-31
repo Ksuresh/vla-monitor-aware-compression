@@ -1,0 +1,68 @@
+# Open-source VLAs under test.
+# backend: "lerobot" (pi0, pi0.5, SmolVLA via LeRobot >=0.6) or "openvla" (OpenVLA / OpenVLA-OFT code bases).
+# tap: module paths whose outputs are pooled into the per-step feature vector the monitors read.
+#   Paths are relative to the policy object. Run scripts/00_inspect_modules.py first to confirm
+#   each hook actually fires for your installed version (module names drift between releases).
+# update_checkpoint: a second checkpoint of the SAME architecture, used as the "model update" variant
+#   (stands in for a LoRA/finetune push without training cost). Leave null to use a LoRA run instead.
+#
+# VERIFY every checkpoint id on the Hub before a long run; ids below were checked on 2026-10-29
+# unless marked "verify".
+
+models:
+  pi05:
+    backend: lerobot
+    checkpoint: lerobot/pi05_libero_finetuned
+    update_checkpoint: zuoxingdong/pi05_fm_libero        # same arch, different training run
+    suites: [libero_spatial, libero_object, libero_goal, libero_10]
+    n_action_steps: 10
+    arch: {actions: flow_chunk, chunk_overlap: true, stochastic_actions: true}   # replans every 10 of 50 steps
+    tap:
+      vlm_last: model.paligemma_with_expert.paligemma.model.language_model.norm   # prefix (VLM) final norm
+      expert_last: model.paligemma_with_expert.gemma_expert.model.norm            # action-expert final norm
+    notes: gated tokenizer google/paligemma-3b-pt-224 -> request access + `hf auth login`
+
+  pi0:
+    backend: lerobot
+    checkpoint: lerobot/pi0_libero_finetuned              # verify; fall back to lerobot/pi0_libero_base + finetune
+    update_checkpoint: null
+    suites: [libero_spatial, libero_object, libero_goal, libero_10]
+    n_action_steps: 10
+    arch: {actions: flow_chunk, chunk_overlap: true, stochastic_actions: true}
+    tap:
+      vlm_last: model.paligemma_with_expert.paligemma.model.language_model.norm
+      expert_last: model.paligemma_with_expert.gemma_expert.model.norm
+
+  smolvla:
+    backend: lerobot
+    checkpoint: HuggingFaceVLA/smolvla_libero             # verify
+    update_checkpoint: null
+    suites: [libero_spatial, libero_object, libero_goal, libero_10]
+    n_action_steps: 10
+    arch: {actions: flow_chunk, chunk_overlap: true, stochastic_actions: true}
+    tap:
+      vlm_last: model.vlm_with_expert.vlm.model.text_model.norm                    # verify with 00_inspect
+      expert_last: model.vlm_with_expert.lm_expert.norm
+
+  openvla:
+    backend: openvla
+    checkpoint: openvla/openvla-7b-finetuned-libero-{suite}   # {suite} in: spatial, object, goal, 10
+    update_checkpoint: null
+    suites: [libero_spatial, libero_object, libero_goal, libero_10]
+    center_crop: true
+    arch: {actions: discrete_tokens_single_step, chunk_overlap: false, stochastic_actions: false}  # greedy decoding
+    tap:
+      llm_last: language_model.model.norm                  # Llama final norm; fires once per decoded token
+    notes: run inside the openvla repo env (torch 2.2, transformers 4.40.1, timm 0.9.10)
+
+  openvla_oft:
+    backend: openvla
+    oft: true
+    checkpoint: moojink/openvla-7b-oft-finetuned-libero-{suite}
+    update_checkpoint: moojink/openvla-7b-oft-finetuned-libero-spatial-object-goal-10
+    suites: [libero_spatial, libero_object, libero_goal, libero_10]
+    center_crop: true
+    arch: {actions: l1_chunk_executed_whole, chunk_overlap: false, stochastic_actions: false}  # 8-step chunk, no replanning overlap
+    tap:
+      llm_last: language_model.model.norm
+    notes: run inside the openvla-oft repo env; uses its get_vla/get_vla_action helpers

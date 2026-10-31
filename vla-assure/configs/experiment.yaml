@@ -1,0 +1,219 @@
+# Experiment configuration. Every (model x variant x suite[+condition]) cell is its own rollout folder.
+
+seed: 7
+reference_episodes_per_task: 50   # R: reference trial slots per task (LIBERO has 50 initial states)
+pilot_episodes_per_task: 5
+
+# Pre-registered trial roles (src/assure/common.py:trial_roles): ONE seeded random partition of all
+# R x 10 reference slots, pooled over tasks, fixed before any rollout.
+#   train  -> monitor training (the ONLY slots any monitor is fitted on; reference repair-slot runs are not used)
+#   calib  -> conformal band (successes only)
+#   repair -> variants run these: the repair pool (exchangeable with test by construction)
+#   test   -> reference AND variants run these: every one is a paired trial for the endpoint
+# R = 50 -> 125 train / 100 calib / 100 repair / 175 test; each variant runs 275 trials per cell.
+# The repair pool is a FIXED role of the same partition (no data-dependent top-ups), so it is exchangeable
+# with the test slots by design; recalibration uses a seeded random subset of its realized successes.
+# Power (scripts/power_analysis.py): one cell (175 test trials) is NOT enough to show non-inferiority at
+# margin 0.05; the primary endpoint therefore pools each model's four Stage B cells (~700 paired trials).
+split: {train: 0.25, calib: 0.20, repair: 0.20, test: 0.35}
+
+# Conformal calibration. "marginal": P(alarm on a success) <= alpha on average over calibration
+# draws. "pac": P(false-alarm rate > alpha) <= delta for the calibration set actually used.
+# Successful calibration episodes required (shape_frac 0.5, >=10 shaping episodes):
+#   marginal: alpha .20 -> 14, .10 -> 19, .05 -> 38      pac (delta .1): .20 -> 22, .10 -> 44, .05 -> 90
+# Split: n_shape = max(min_shape, ceil(shape_frac N)) shaping episodes, the rest set the threshold;
+# q = r-th smallest threshold statistic (scripts/verify_budgets.py checks every number above).
+# Unit: one band per (model, suite, condition, monitor, alpha), pooled over tasks -- the guarantee is for
+# a success drawn from the suite's trial design, NOT per task. calib = 150 slots; at >=30% success that
+# meets the PAC budget at alpha .10 (44). Rows below the budget are flagged and excluded from claims.
+calibration: {guarantee: marginal, delta: 0.1, shape_frac: 0.5, min_shape: 10, strict: false, unit: pooled}
+alpha: [0.05, 0.10, 0.20]         # main text reports 0.10; rows below the budget are flagged
+
+variants:
+  fp16:            {kind: reference}
+  w8:              {kind: quant, bits: 8, group_size: 128}
+  w4:              {kind: quant, bits: 4, group_size: 128}
+  w4_vision_fp:    {kind: quant, bits: 4, group_size: 128, exclude: ["vision", "siglip", "vision_tower"]}
+  bnb8:            {kind: bnb, bits: 8}                # OpenVLA only: real bitsandbytes INT8 (true memory numbers)
+  bnb4:            {kind: bnb, bits: 4}                # OpenVLA only: real bitsandbytes NF4
+  tao8:            {kind: torchao, bits: 8}            # LeRobot models: real torchao int8 weight-only kernels
+  tao4:            {kind: torchao, bits: 4, group_size: 128}  # LeRobot models: real torchao int4 (bf16, CUDA)
+  update:          {kind: checkpoint_swap}             # uses models.yaml:update_checkpoint
+  # Controlled update: LoRA fine-tune of the SAME checkpoint on the SAME suite's demonstrations with the
+  # policy's own training objective (flow matching for pi0/pi0.5/SmolVLA). scripts/05_lora_update.sh
+  # reads this block and writes lora_spec.json next to the checkpoint. Set `path` after training.
+  lora_update:
+    kind: lora
+    data: "HuggingFaceVLA/libero, episodes of the evaluated suite only (demonstrations, no rollouts)"
+    objective: "policy's native loss (flow-matching velocity MSE on action chunks); no auxiliary loss"
+    r: 16
+    lora_alpha: 32
+    dropout: 0.05
+    target_modules: "q_proj,k_proj,v_proj,o_proj,gate_proj,up_proj,down_proj"  # VLM backbone + action expert
+    frozen: "vision encoder, embeddings, normalisation statistics"
+    steps: 6000
+    batch_size: 8
+    lr: 1.0e-4
+    seed: 7
+    path: null
+  # Mixed precision is requested by name, e.g. w4p-feature_drift-f10 (see src/assure/variants.py):
+  # 4-bit except blocks chosen by a rule, protected up to 10% of Linear params (matched memory).
+
+# Mixed-precision comparison: every rule at the same parameter budgets -> memory/success/assurance Pareto.
+# margin_drift / score_drift are the alarm-statistic-aware candidates; feature_drift is the feature-level one.
+pareto:
+  rules: [margin_drift, margin_greedy, score_drift, feature_drift, action_drift, weight_error, edge, random]
+  protect_pct: [5, 10, 20]
+
+# LIBERO is near-saturated for strong VLAs, which leaves too few failures to train or test monitors.
+# Seeded camera shifts (identical draws for every variant of a trial) raise failure rates.
+conditions:
+  nominal: {}
+  shift_mild:   {noise_std: 0.03, brightness: 0.15, seed: 0}
+  shift_strong: {noise_std: 0.08, brightness: 0.30, seed: 0}
+  # Non-visual failure source (secondary robustness check): seeded noise on executed arm actions
+  # (normalised action units for LeRobot policies; gripper untouched). Calibrate the std in Stage 0.
+  action_noise: {action_noise_std: 0.10, seed: 0}
+
+# ext_* read downsampled camera pixels only (no policy weights). In the DEPLOYMENT analysis their
+# change estimates how much the episode population itself shifted; in the COUNTERFACTUAL analysis
+# they are unchanged by construction.
+monitors: [safe_mlp, safe_lstm, mahalanobis, acc, rnd, fiper, ext_mahalanobis, ext_rnd]
+
+# Supervised probes need more than the feasibility minimum of failures; Stage A learning curves
+# (03_evaluate.py --learning_curve) decide whether these are enough.
+min_train_failures: {default: 5, safe_mlp: 20, safe_lstm: 20}
+
+fixes:
+  none: {}
+  recal_success: {n_rollouts: [10, 19, 44]}      # 19 / 44 = marginal / PAC budget under exchangeability (A1); the exact finite-population P(FPR_test > alpha) for each cell's test subset is reported alongside (finite_pop_p_viol)
+  coral: {n_rollouts: [5, 10, 20, 50]}           # label-free feature alignment, any outcome
+  retrain_supervised: {n_rollouts: 75}           # retrain with failures: fully supervised reference baseline
+
+# Statistical plan (prespecified). CIs: task-clustered bootstrap. Variant-vs-reference differences are
+# paired by trial where trials match (paired, obs_controlled); deployment differences are two-sample.
+# Holm-Bonferroni per analysis family over all (model, monitor, variant) comparisons at the main alpha.
+# CONFIRMATORY TESTS (primary endpoint, rule-vs-rule contrasts): linear paired endpoints, >= 20 task
+# clusters, wild cluster restricted bootstrap-t with Webb weights (metrics.confirmatory). Levels:
+# degradation 0.0375, non-inferiority 0.03: SIMULATION-CALIBRATED OPERATING LEVELS (scripts/calibrate_level.py:
+# 27 nuisance settings x 2000 studies, then the 3 worst settings re-run with 10000 studies each and judged by
+# the one-sided 95% Clopper-Pearson UPPER bound). NI @0.0325: worst 0.044 (upper 0.047). DEG @0.04: worst
+# 0.046 (upper 0.050, not <= 0.05) -> lowered to 0.0375: worst 0.046 (upper 0.049). Valid for this grid only,
+# not a proof of uniform size control. Stage A rule: re-run with Stage A estimates; any refined UPPER bound
+# above 0.05 lowers the level by 0.0025 (repeat) BEFORE Stage B.
+# Everything else (per-cell, deployment ratios, AUROC, TPR) is DESCRIPTIVE: estimates + intervals only.
+# Degradation D is oriented per metric so that D > 0 is WORSE:
+#   D_FPR = FPR_var - FPR_ref    D_AUROC = AUROC_ref - AUROC_var    D_TPR = TPR_ref - TPR_var
+#   D_success = success_ref - success_var
+# "degraded"     = Holm-adjusted one-sided p for H0 (D <= 0) below 0.05
+# "non-inferior" = Holm-adjusted one-sided p for H0 (D >= margin) below 0.05 (only this supports "robust")
+# otherwise "inconclusive" -- never read as preserved calibration.
+# Primary endpoint: paired D_FPR, W4 vs fp16, alpha 0.10, per (model, internal monitor), pooled over the
+# model's Stage B cells, clustered by (suite, task); Holm family = the internal monitors of one model.
+stats: {test: wcr_webb, level_degraded: 0.0375, level_noninf: 0.03, min_clusters_confirmatory: 20,
+        wcr_B: 9999, fpr_margin: 0.05, auroc_margin: 0.05, tpr_margin: 0.10, success_margin: 0.05, bootstrap: 2000,
+        level: 0.05, main_alpha: 0.10, primary_variant: w4,
+        primary_exclude_conditions: [action_noise]}
+
+# Pre-registered confirmatory families (multiplicity map). Everything not listed is descriptive.
+families:
+  proposed: margin_drift
+  primary_budget_pct: 10
+  F1: "RQ1: W4 vs fp16, paired D_FPR on joint successes, internal monitors; Holm per model; degraded / non-inferior"
+  F2: "RQ3 method: proposed vs each baseline at 10%, both suites pooled, monitor #A; IUT(FPR sup, TPR NI, success NI); Holm over baselines"
+  F3: "RQ3 transfer: same as F2 with the frozen independent replicate #B"
+  F4: "RQ3 real kernels: same as F2 with tao4p builds of proposed and best baseline"
+  descriptive: "RQ2 repairs, per-cell results, other budgets (5%, 20%), margin_greedy, other monitor families, deployment ratios, AUROC"
+  # F2-F4 compare the proposed rule with these pre-specified baselines only (Holm over them); others are descriptive
+  confirmatory_baselines: [action_drift, weight_error, random]
+  # F4 (real int4 kernels) compares the proposed rule with ONE baseline, fixed by identity before Stage C, not
+  # chosen by outcomes: the first rule in this order whose tao4p build passes the pre-registered parity screen
+  # (07_parity.py, run on captured reference episodes BEFORE any F4 deployment). If the proposed rule itself
+  # fails parity, F4 is "not confirmable" and the deployability claim is withheld; no other set is substituted.
+  f4_baseline_order: [action_drift, weight_error, random]
+  # Headline method claim (F2): the proposed rule is better than ALL three confirmatory baselines. Per-baseline
+  # results are reported; "better than b" for a subset is reported as such, not as the method claim.
+  # Population for ALL three components of F2-F4: paired test slots + the K extension trials per task per suite.
+  # Detection component (TPR non-inferiority on JOINT FAILURES) needs its own sample size
+  # (scripts/detection_feasibility.py; 2 x 4000 simulated studies per point, Dirichlet(1) failure spread):
+  #   level 0.02 keeps the upper 95% MC bound of size <= 0.047 for n_jf >= 90 (0.03 was liberal: up to 0.066)
+  #   N_min for power >= 0.80 by alarm discordance between the two rules on joint failures:
+  #   0.05, 0.075 -> 90; 0.10 -> 120; 0.125 -> 160; 0.15 -> 200; 0.20 -> 300; > 0.20 -> infeasible (4000 studies each)
+  # Sizing (before deployment): d_hat = upper 80% bound of discordance on reference failures in the Stage C
+  # shadow pass; joint failure rate from the Stage A failure rate and success correlation (lower 80% bound);
+  # extension slots K per task so that P(n_jf >= N_min(d_hat)) >= 0.90, capped at max_extension_per_task.
+  # Realised n_jf < N_min or < min_clusters tasks with a joint failure -> "detection not confirmable":
+  # the method claim is withheld whatever the false-alarm result.
+  detection: {level_tpr_noninf: 0.02, n_min_floor: 90, n_min_by_discordance: {0.05: 90, 0.075: 90, 0.10: 120, 0.125: 160, 0.15: 200, 0.20: 300},
+              min_clusters_with_failures: 12, sizing_probability: 0.90, max_extension_per_task: 100,
+              discordance_inflation: 1.5,
+              # full F2 rule (scripts/f2_power.py): K is also large enough that the COMPLETE rule (three
+              # components, composite p, Holm over the 3 baselines, detection gate) reaches power 0.80 against
+              # ALL baselines at the pre-registered minimal FPR improvement delta_star; final K = max of the two
+              joint_power_target: 0.80, delta_star: 0.03}   # shadow discordance is a proxy: size as if executed discordance were 1.5x
+
+# Real-kernel parity (scripts/07_parity.py): pre-registered acceptance criteria, all must hold.
+parity: {episodes: 24, action_ratio_max: 0.25, dJ_max: 0.10, score_spearman_min: 0.95,
+         fa_disagreement_max: 0.10, md_disagreement_max: 0.10}
+
+# Stage 0 reproduction (scripts/stage0_check.py): one-sided 95% lower bound of fp16 nominal success
+# >= published - margin, with the standard LIBERO protocol of 50 trials per task (= the Stage B nominal
+# reference cell, reused). Fill in the published rates you compare against.
+stage0: {episodes_per_task: 50, margin: 0.05, published: {pi05: {libero_10: null, libero_spatial: null}}}
+
+# Staged plan. Each stage has explicit go/no-go criteria (see README). scripts/run_stage.py A|B|C.
+stages:
+  A:   # feasibility; budget: scripts/budget.py (~13 GPU-hours at planning assumptions)
+    models: [pi05]
+    suites: [libero_10]
+    conditions: [shift_mild]            # replace with the Stage 0 pilot's condition that gives 60-85% success
+    reference_episodes_per_task: 40     # 400 slots -> 100 train / 80 calib / 80 repair / 140 test
+    # Stage A is a single cell: powered for an effect estimate, NOT for non-inferiority (see power.csv).
+    shadows: [w8, w4, update]           # observation-controlled monitor scores on reference trials
+    deploy: [w4, update]                # executed on the 140 test (paired) + 80 repair slots
+    repair_target_successes: 0          # repairs are not evaluated in Stage A
+    monitors: [safe_mlp, mahalanobis, rnd, acc, ext_mahalanobis]
+    # Direct replication anchor for Bysani (NeurIPS 2026): SmolVLA, W4, nominal LIBERO-Spatial (~2 GPU-hours)
+    replication: {model: smolvla, suite: libero_spatial, condition: nominal, shadows: [w4], deploy: [w4]}
+  B:   # core results (~135 GPU-hours at planning assumptions)
+    models: [pi05, smolvla, openvla_oft]
+    suites: [libero_10, libero_spatial]
+    conditions: [nominal, shift_mild]
+    shadows: [w8, w4, w4_vision_fp, update]
+    deploy: [w8, w4, update]
+    # Fixed repair pool (100 slots): P(>= 44 successes) = 0.90 at 50% success, >= 0.999 from 60%. No top-ups.
+    repair_target_successes: 0
+    # secondary robustness check with a non-visual failure source; excluded from the primary pool
+    secondary: {models: [pi05], suites: [libero_10], conditions: [action_noise], deploy: [w4]}
+  C:   # extensions (~150 GPU-hours + ~1 GPU-hour per detection-extension trial per task)
+    pareto_model: pi05
+    pareto_suite: libero_10
+    pareto_condition: shift_mild        # all rule x pct variants as SHADOWS; deploy the frontier only
+    # the deployed frontier runs on BOTH suites so rule-vs-rule contrasts have 20 task clusters (confirmatory);
+    # one suite (10 clusters) would be descriptive only
+    pareto_deploy_suites: [libero_10, libero_spatial]
+    sensitivity_monitor: "mahalanobis#A"   # selection monitor: trained on half A of the training slots
+    # evaluation monitors for the Pareto cells: the selection monitor, its independent replicate on the
+    # disjoint half B (never seen by selection), and other families (cross-family transfer, descriptive)
+    pareto_monitors: ["mahalanobis#A", "mahalanobis#B", mahalanobis, rnd, safe_mlp]
+    # real-kernel executed check (descriptive): the proposed rule and the best baseline rebuilt with torchao
+    # int4 and run on the LIBERO-10 test slots, to check the direction of the D_FPR advantage holds
+    real_kernel_deploy: [tao4p-margin_drift-f10, tao4p-<F4 baseline>-f10]   # baseline from results/parity/<model>_f10.json (f4_baseline); BOTH suites
+    models_reduced: [pi0, openvla]      # 1 suite, shift_mild, fp16 + w4 (+ bnb4 for openvla)
+    efficiency:                         # real kernels, incl. the proposed mixed-precision sets (tao4p-*)
+      pi05: [fp16, tao8, tao4, tao4p-margin_drift-f10, tao4p-margin_greedy-f10, tao4p-action_drift-f10, tao4p-random-f10]
+      smolvla: [fp16, tao8, tao4]
+      openvla: [fp16, bnb8, bnb4]
+    sensitivity_stability: [12, 24, 48] # captured-episode counts for the ranking-stability check
+    greedy_broad: {model: smolvla, budget_pct: 5}  # unrestricted candidate set on a smaller model
+
+# Execution budget (scripts/budget.py). Episode counts come from the design above; the per-episode time and
+# storage below are PLANNING ASSUMPTIONS (single A100/L40-class GPU, LIBERO sim on CPU, features at the
+# configured taps), replaced by measured run.json values after Stage A (budget.py --measured).
+budget:
+  seconds_per_episode: {pi05: 30, pi0: 30, smolvla: 12, openvla_oft: 20, openvla: 60}
+  mb_per_episode: {pi05: 2.0, pi0: 2.0, smolvla: 1.0, openvla_oft: 1.5, openvla: 1.5}
+  shadow_overhead: 0.30          # each non-controlling shadow copy adds ~30% to episode time
+  max_captured: 192              # Stage C capture cap (selection + held-out)
+  efficiency_episodes: 20        # per efficiency configuration (latency / memory only)
+  planning_extension_per_task: 40
