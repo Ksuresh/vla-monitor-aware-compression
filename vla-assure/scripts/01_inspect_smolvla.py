@@ -31,7 +31,7 @@ def main() -> int:
     if args.device == "cuda" and not torch.cuda.is_available():
         sys.exit("CUDA unavailable; no GPU charged by this script itself.")
     from lerobot.configs.policies import PreTrainedConfig
-    from lerobot.policies import make_policy
+    from lerobot.policies.factory import make_policy
     from lerobot.envs.configs import LiberoEnv
 
     print("Loading checkpoint:", ckpt, flush=True)
