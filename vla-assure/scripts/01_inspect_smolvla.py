@@ -38,7 +38,7 @@ def main() -> int:
     pcfg = PreTrainedConfig.from_pretrained(ckpt)
     pcfg.pretrained_path = ckpt
     pcfg.device = args.device
-    policy = make_policy(cfg=pcfg, env_cfg=LiberoEnv(task="libero_spatial", task_ids=[0]))
+    policy = make_policy(cfg=pcfg, env_cfg=LiberoEnv(task="libero_spatial"))
     policy.eval()
     names = dict(policy.named_modules())
     taps = {key: {"configured_path": path, "exists": path in names}
