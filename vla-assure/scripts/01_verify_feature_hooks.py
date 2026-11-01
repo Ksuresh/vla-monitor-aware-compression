@@ -38,7 +38,7 @@ def main():
         "observation.images.image2": torch.full((1, 3, 256, 256), 0.5, device=device),
         "observation.state": torch.zeros((1, 8), device=device),
         "observation.language.tokens": tok["input_ids"].to(device),
-        "observation.language.attention_mask": tok["attention_mask"].to(device),
+        "observation.language.attention_mask": tok["attention_mask"].to(device=device, dtype=torch.bool),
     }
 
     observations = {name: [] for name in config["tap"]}
