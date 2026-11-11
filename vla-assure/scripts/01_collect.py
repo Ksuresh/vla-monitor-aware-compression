@@ -57,9 +57,14 @@ def main():
                     help="reference: total successes; VARIANTS: successes in the repair pool (repair slots + "
                          "top-ups). Precommitted: rounds of one trial per task, at most --max_extra_rounds")
     ap.add_argument("--max_extra_rounds", type=int, default=40)
+    ap.add_argument("--roles", default="test,repair",
+                    help="VARIANTS: which pre-registered slot roles to run (go/no-go uses 'test' only)")
     ap.add_argument("--extension", type=int, default=0,
                     help="VARIANTS (Stage C families F2-F4): also run K pre-registered extension slots per task "
                          "(EXT_OFFSET + k), paired across rules; K from results/power/stage_c_sizing.json")
+    ap.add_argument("--ref_roles", default="",
+                    help="REFERENCE only: restrict to these pre-registered slot roles (e.g. 'test' for a shadow check)")
+    ap.add_argument("--max_per_task", type=int, default=0, help="at most this many slots per task (reference; for variants: pilots only)")
     a = ap.parse_args()
     setup_logging()
 
@@ -75,11 +80,18 @@ def main():
     roles = trial_roles(exp["seed"], tasks, R, exp["split"])
     if is_ref:
         trial_ids = {t: list(range(R)) for t in tasks}
+        if a.ref_roles:   # e.g. an observation-controlled shadow check on a few held-out test slots only
+            keep = set(a.ref_roles.split(","))
+            trial_ids = {t: [i for i in v if roles[(t, i)] in keep] for t, v in trial_ids.items()}
+        if a.max_per_task:
+            trial_ids = {t: v[:a.max_per_task] for t, v in trial_ids.items()}
         topup_base = R
     else:
-        trial_ids = {t: sorted(i for (tt, i), r in roles.items() if tt == t and r in ("test", "repair"))
+        trial_ids = {t: sorted(i for (tt, i), r in roles.items() if tt == t and r in set(a.roles.split(",")))
                      + [EXT_OFFSET + k for k in range(a.extension)] for t in tasks}
         topup_base = TOPUP_OFFSET
+        if a.max_per_task:   # pilots only: a few slots per task
+            trial_ids = {t: v[:a.max_per_task] for t, v in trial_ids.items()}
     s = make_session(a.model, mcfg, a.variant, var, a.suite, device=a.device, base_seed=exp["seed"],
                      n_alt_samples=a.alt_samples, repo_root=a.repo_root,
                      condition=a.condition, condition_spec=exp["conditions"][a.condition], shadow=shadow)

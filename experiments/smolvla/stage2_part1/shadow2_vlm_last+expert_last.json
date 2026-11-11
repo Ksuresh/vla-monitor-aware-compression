@@ -1,0 +1,111 @@
+{
+  "n_shadow": 40,
+  "n_success": 25,
+  "variants": {
+    "cfg_denoise5": {
+      "feature_drift": {
+        "vlm_last": 0.0,
+        "expert_last": 0.34835711121559143
+      },
+      "action_div": 0.6558882497251034,
+      "monitors": {
+        "mahalanobis#A": {
+          "score_shift_sd": 0.5073588169887439,
+          "fpr_fp16": 0.12,
+          "fpr_shadow": 0.2,
+          "d_fpr": 0.08,
+          "d_fpr_90": [
+            0.0,
+            0.18181818181818182
+          ],
+          "tpr_fp16": 0.2,
+          "tpr_shadow": 0.4,
+          "score_up_share": 0.96
+        },
+        "mahalanobis": {
+          "score_shift_sd": 1.1857894719483963,
+          "fpr_fp16": 0.12,
+          "fpr_shadow": 0.44,
+          "d_fpr": 0.32,
+          "d_fpr_90": [
+            0.15789473684210525,
+            0.48154533844189007
+          ],
+          "tpr_fp16": 1.0,
+          "tpr_shadow": 1.0,
+          "score_up_share": 1.0
+        }
+      }
+    },
+    "w4_lm": {
+      "feature_drift": {
+        "vlm_last": 0.13600488007068634,
+        "expert_last": 0.41816139221191406
+      },
+      "action_div": 0.8356834471225738,
+      "monitors": {
+        "mahalanobis#A": {
+          "score_shift_sd": 4.699298726000523,
+          "fpr_fp16": 0.12,
+          "fpr_shadow": 1.0,
+          "d_fpr": 0.88,
+          "d_fpr_90": [
+            0.6785714285714286,
+            1.0
+          ],
+          "tpr_fp16": 0.2,
+          "tpr_shadow": 1.0,
+          "score_up_share": 1.0
+        },
+        "mahalanobis": {
+          "score_shift_sd": 12.673730593909122,
+          "fpr_fp16": 0.12,
+          "fpr_shadow": 1.0,
+          "d_fpr": 0.88,
+          "d_fpr_90": [
+            0.7368421052631579,
+            1.0
+          ],
+          "tpr_fp16": 1.0,
+          "tpr_shadow": 1.0,
+          "score_up_share": 1.0
+        }
+      }
+    },
+    "w8": {
+      "feature_drift": {
+        "vlm_last": 0.0,
+        "expert_last": 0.2793596386909485
+      },
+      "action_div": 0.6906778126955032,
+      "monitors": {
+        "mahalanobis#A": {
+          "score_shift_sd": 0.03135110757558717,
+          "fpr_fp16": 0.12,
+          "fpr_shadow": 0.12,
+          "d_fpr": 0.0,
+          "d_fpr_90": [
+            0.0,
+            0.0
+          ],
+          "tpr_fp16": 0.2,
+          "tpr_shadow": 0.26666666666666666,
+          "score_up_share": 0.6
+        },
+        "mahalanobis": {
+          "score_shift_sd": 0.05465396363075491,
+          "fpr_fp16": 0.12,
+          "fpr_shadow": 0.08,
+          "d_fpr": -0.04,
+          "d_fpr_90": [
+            -0.10734126984126982,
+            0.0
+          ],
+          "tpr_fp16": 1.0,
+          "tpr_shadow": 1.0,
+          "score_up_share": 0.6
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "condition": "nominal",
+  "budget_pct_of_expert": 15,
+  "n_action_steps": 10,
+  "verdict": "NO-GO for the method: the monitor is robust to expert W4 here. Write up as a robustness audit; consider W4 of the VLM too before giving up.",
+  "w4_moves": false,
+  "method_better": false
+}

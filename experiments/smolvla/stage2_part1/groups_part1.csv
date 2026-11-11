@@ -1,0 +1,16 @@
+features,monitor,variant,success_fp16,success_var,joint_succ,FPR_fp16,FPR_var,n_new_failures,detect_NEW_failures
+both_layers,acc,w4_lm,0.529,0.207,18,0.0,0.056,56,0.946
+both_layers,ext_mahalanobis,w4_lm,0.529,0.207,18,0.0,0.0,56,0.196
+both_layers,mahalanobis,w4_lm,0.529,0.207,18,0.0,1.0,56,1.0
+both_layers,rnd,w4_lm,0.529,0.207,18,0.0,1.0,56,1.0
+both_layers,safe_mlp,w4_lm,0.529,0.207,18,0.278,0.722,56,1.0
+expert_only,acc,w4_lm,0.529,0.207,18,0.0,0.056,56,0.946
+expert_only,ext_mahalanobis,w4_lm,0.529,0.207,18,0.0,0.0,56,0.196
+expert_only,mahalanobis,w4_lm,0.529,0.207,18,0.0,1.0,56,1.0
+expert_only,rnd,w4_lm,0.529,0.207,18,0.0,1.0,56,1.0
+expert_only,safe_mlp,w4_lm,0.529,0.207,18,0.278,0.833,56,1.0
+vlm_only,acc,w4_lm,0.529,0.207,18,0.0,0.056,56,0.946
+vlm_only,ext_mahalanobis,w4_lm,0.529,0.207,18,0.0,0.0,56,0.196
+vlm_only,mahalanobis,w4_lm,0.529,0.207,18,0.0,1.0,56,1.0
+vlm_only,rnd,w4_lm,0.529,0.207,18,0.056,1.0,56,1.0
+vlm_only,safe_mlp,w4_lm,0.529,0.207,18,0.167,0.444,56,0.911

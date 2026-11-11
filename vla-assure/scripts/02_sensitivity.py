@@ -52,6 +52,8 @@ from assure.adapters import make_session  # noqa: E402
 from assure.common import ROOT, load_configs, setup_logging, write_json  # noqa: E402
 from assure.quant import QuantSpec, apply_fake_quant, blocks_of  # noqa: E402
 
+_SCOPE_INC = None  # quantization scope (experiment.yaml: quant_scope.include); set in main()
+
 PER_QUERY_MONITORS = ("mahalanobis", "rnd", "safe_mlp", "safe_lstm")  # score from features only
 SD_FLOOR = 0.05  # M and s are already in band-normalised / standardised units, so 0.05 is a small floor
 
@@ -200,7 +202,10 @@ def main():
         K_ref = [len(x) for x in S_ref]
         k_ref = np.array([cp.first_alarm(x) if cp.first_alarm(x) is not None else len(x) for x in S_ref])
 
-    blocks = blocks_of(s.module, a.block_regex)
+    global _SCOPE_INC
+    scope = exp.get("quant_scope") or {}
+    inc = _SCOPE_INC = scope.get("include")
+    blocks = blocks_of(s.module, scope.get("block_regex") or a.block_regex)
     n_q = sum(len(ep) for ep in episodes)
     print(f"{len(blocks)} blocks, {len(episodes)} episodes, {n_q} captured queries")
     out, t0 = [], time.time()
@@ -305,7 +310,7 @@ def rank_bootstrap(module, blocks, dsel, ok_sel, B=500, budgets=(5, 10, 20), see
 
     def selected(j, pct):
         order = [names[i] for i in np.argsort(-j / np.array([max(params[n], 1) for n in names]))]
-        return set(fill_budget(module, order, pct / 100))
+        return set(fill_budget(module, order, pct / 100, _SCOPE_INC))
     base_j = J(np.arange(len(ok_sel)))
     actual = {p: selected(base_j, p) for p in budgets}
     jac = {p: [] for p in budgets}
@@ -390,7 +395,7 @@ def greedy_check(a, s, episodes, ok, ref, mon_stats, M_ref, m_sd, blocks, out):
         if key in cache:
             return cache[key]
         s.module.load_state_dict(full)
-        apply_fake_quant(s.module, QuantSpec(bits=a.bits, protect=list(P)))
+        apply_fake_quant(s.module, QuantSpec(bits=a.bits, include=list(_SCOPE_INC or ["*"]), protect=list(P)))
         run = [[s.replay(c) for c in episodes[i]] for i in idxs]
         _, M_new = mon_stats(run)
         s.module.load_state_dict(full)
@@ -451,13 +456,13 @@ def greedy_check(a, s, episodes, ok, ref, mon_stats, M_ref, m_sd, blocks, out):
     j0_hold = J([], hold) if hold else float("nan")
     for pct in budgets:
         f = pct / 100
-        ind = fill_budget(s.module, by_ratio, f)
-        gre = fill_budget(s.module, greedy[str(pct)] + [b for b in by_ratio if b not in greedy[str(pct)]], f)
-        rnd = [fill_budget(s.module, _random.Random(k).sample(blocks, len(blocks)), f) for k in range(3)]
+        ind = fill_budget(s.module, by_ratio, f, _SCOPE_INC)
+        gre = fill_budget(s.module, greedy[str(pct)] + [b for b in by_ratio if b not in greedy[str(pct)]], f, _SCOPE_INC)
+        rnd = [fill_budget(s.module, _random.Random(k).sample(blocks, len(blocks)), f, _SCOPE_INC) for k in range(3)]
         row = {"budget_pct": pct,
-               "protected_frac_independent": protected_fraction(s.module, ind),
-               "protected_frac_greedy": protected_fraction(s.module, gre),
-               "protected_frac_random_mean": float(np.mean([protected_fraction(s.module, r) for r in rnd])),
+               "protected_frac_independent": protected_fraction(s.module, ind, _SCOPE_INC),
+               "protected_frac_greedy": protected_fraction(s.module, gre, _SCOPE_INC),
+               "protected_frac_random_mean": float(np.mean([protected_fraction(s.module, r, _SCOPE_INC) for r in rnd])),
                "J_sel_independent": J(ind, sel), "J_sel_greedy": J(gre, sel),
                "overlap_independent_greedy": len(set(ind) & set(gre)) / max(len(set(ind) | set(gre)), 1),
                "greedy_nonimproving_steps": sum(not x["improved"] for x in seq if x["used_frac"] <= f),

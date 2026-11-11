@@ -1,0 +1,129 @@
+{
+  "checkpoint": "HuggingFaceVLA/smolvla_libero",
+  "input": "single synthetic constant-image, zero-state observation",
+  "seeds": [
+    101,
+    123,
+    202,
+    303,
+    404
+  ],
+  "method": "fake INT4 symmetric RTN, original expert weights restored between configurations",
+  "conditions": {
+    "full_fake_int4": {
+      "protected_blocks": [],
+      "quantized_linear_layers": 224,
+      "quantized_linear_weight_parameters": 96665600,
+      "mean_action_relative_l2": 0.2757403254508972,
+      "mean_final_expert_relative_l2": 0.28035459816455843,
+      "per_seed": [
+        {
+          "seed": 101,
+          "action_relative_l2": 0.29098770022392273,
+          "final_expert_relative_l2": 0.3118884563446045
+        },
+        {
+          "seed": 123,
+          "action_relative_l2": 0.22042661905288696,
+          "final_expert_relative_l2": 0.2330256849527359
+        },
+        {
+          "seed": 202,
+          "action_relative_l2": 0.2679479122161865,
+          "final_expert_relative_l2": 0.2532736361026764
+        },
+        {
+          "seed": 303,
+          "action_relative_l2": 0.3682369291782379,
+          "final_expert_relative_l2": 0.3301270306110382
+        },
+        {
+          "seed": 404,
+          "action_relative_l2": 0.23110246658325195,
+          "final_expert_relative_l2": 0.27345818281173706
+        }
+      ]
+    },
+    "protect_sensitive": {
+      "protected_blocks": [
+        24,
+        18,
+        30,
+        22,
+        0
+      ],
+      "quantized_linear_layers": 189,
+      "quantized_linear_weight_parameters": 81305600,
+      "mean_action_relative_l2": 0.20077536404132842,
+      "mean_final_expert_relative_l2": 0.21886539459228516,
+      "per_seed": [
+        {
+          "seed": 101,
+          "action_relative_l2": 0.21258719265460968,
+          "final_expert_relative_l2": 0.2458363175392151
+        },
+        {
+          "seed": 123,
+          "action_relative_l2": 0.13045795261859894,
+          "final_expert_relative_l2": 0.14947527647018433
+        },
+        {
+          "seed": 202,
+          "action_relative_l2": 0.18679162859916687,
+          "final_expert_relative_l2": 0.19885921478271484
+        },
+        {
+          "seed": 303,
+          "action_relative_l2": 0.2752296030521393,
+          "final_expert_relative_l2": 0.26627522706985474
+        },
+        {
+          "seed": 404,
+          "action_relative_l2": 0.19881044328212738,
+          "final_expert_relative_l2": 0.2338809370994568
+        }
+      ]
+    },
+    "protect_control": {
+      "protected_blocks": [
+        7,
+        15,
+        23,
+        31,
+        20
+      ],
+      "quantized_linear_layers": 189,
+      "quantized_linear_weight_parameters": 81715200,
+      "mean_action_relative_l2": 0.2800286889076233,
+      "mean_final_expert_relative_l2": 0.2803951740264893,
+      "per_seed": [
+        {
+          "seed": 101,
+          "action_relative_l2": 0.29296979308128357,
+          "final_expert_relative_l2": 0.31057095527648926
+        },
+        {
+          "seed": 123,
+          "action_relative_l2": 0.22211377322673798,
+          "final_expert_relative_l2": 0.23495197296142578
+        },
+        {
+          "seed": 202,
+          "action_relative_l2": 0.2645457684993744,
+          "final_expert_relative_l2": 0.25028637051582336
+        },
+        {
+          "seed": 303,
+          "action_relative_l2": 0.3782951831817627,
+          "final_expert_relative_l2": 0.32593607902526855
+        },
+        {
+          "seed": 404,
+          "action_relative_l2": 0.24221892654895782,
+          "final_expert_relative_l2": 0.28023049235343933
+        }
+      ]
+    }
+  },
+  "limitations": "Protected blocks selected using same synthetic observation (selection bias). Control not parameter-exact matched. No real LIBERO observations, failure monitor, calibration, task success, or INT4 efficiency."
+}

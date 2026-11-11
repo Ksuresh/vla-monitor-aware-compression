@@ -1,0 +1,4 @@
+variant,success,fp16_success,joint_successes,FPR_fp16,FPR_variant,D_FPR,D_FPR_90lo,D_FPR_90hi,TPR_variant,failures
+w4,0.507,0.529,53,0.132,0.132,0.0,-0.041,0.044,0.406,69
+w4p-margin_drift-f15,0.471,0.529,58,0.121,0.121,0.0,0.0,0.0,0.473,74
+w4p-action_drift-f15,0.571,0.529,61,0.098,0.115,0.016,0.0,0.046,0.433,60

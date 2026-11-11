@@ -585,3 +585,54 @@ def test_round13_f2_power_rule_and_f4_order():
     _, exp = load_configs()
     assert exp["families"]["f4_baseline_order"][0] == "action_drift"
     assert exp["families"]["detection"]["delta_star"] == 0.03
+
+
+def test_round14_quant_scope_expert_only():
+    from assure.variants import apply_variant, fill_budget, resolve, scope_total
+    from assure.common import load_configs
+
+    class Blk(nn.Module):
+        def __init__(self, d):
+            super().__init__()
+            self.a, self.b = nn.Linear(d, d), nn.Linear(d, d)
+
+    class Pol(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.vlm = nn.Module(); self.vlm.layers = nn.ModuleList([Blk(32) for _ in range(4)])
+            self.expert = nn.Module(); self.expert.layers = nn.ModuleList([Blk(16) for _ in range(4)])
+
+    _, exp = load_configs()
+    exp = dict(exp, quant_scope={"include": ["expert.*"], "block_regex": r"expert\.layers\.(\d+)$"})
+    pol = Pol()
+    inc = exp["quant_scope"]["include"]
+    assert scope_total(pol, inc) == 4 * 2 * 16 * 16
+    chosen = fill_budget(pol, ["expert.layers.0", "expert.layers.1"], 0.25, inc)   # 25% of the expert = 1 block
+    assert chosen == ["expert.layers.0"]
+    spec = resolve("w4p-random-f25", exp)
+    assert spec["include"] == inc and spec["block_regex"]
+    before = {n: p.detach().clone() for n, p in pol.named_parameters()}
+    rep = apply_variant(pol, "toy", spec)
+    changed = {n for n, p in pol.named_parameters() if not torch.equal(p, before[n])}
+    assert changed and all(n.startswith("expert.") for n in changed)          # VLM untouched
+    assert len(rep["protected_blocks"]) == 1 and abs(rep["protected_frac_actual"] - 0.25) < 1e-9
+
+
+def test_resplit_script(tmp_path):
+    rng = np.random.default_rng(5)
+    roll = tmp_path / "rollouts"
+    make_cell(roll, rng, "fp16", n_per_task=30)
+    make_cell(roll, rng, "w4", n_per_task=30, shift=0.5)
+    out = tmp_path / "resplit.json"
+    r = subprocess.run([sys.executable, str(ROOT / "scripts/resplit.py"), "--model", "toy", "--key", "suite",
+                        "--rollouts", str(roll), "--taps", "vlm", "--monitors", "mahalanobis", "--splits", "3",
+                        "--out", str(out)], capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr[-2000:]
+    import json
+    res = json.loads(out.read_text())["variants"]["w4"]
+    t = res["transitions"]
+    assert sum(t.values()) == res["n_pairs"] > 0
+    m = res["monitors"]["mahalanobis"]
+    assert m["n_splits_ok"] == 4 and m["over_splits"]["fpr_var_all"][0] >= m["over_splits"]["fpr_fp16_all"][0]
+    fx = m["fixes_crossfit"]["crossfit_marginal"]
+    assert {"inherited", "coral"} <= set(fx["options"]) and fx["n_required"] == 19

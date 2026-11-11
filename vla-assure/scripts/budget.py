@@ -89,8 +89,8 @@ def main():
             add("C", m, f"w4p-{r}-f10", ds, c0, sB["test"] + sB["repair"] + ext, 0, f"F2/F3; {ext} extension")
         for v in C["real_kernel_deploy"]:
             add("C", m, v, ds, c0, sB["test"] + sB["repair"] + ext, 0, f"F4; {ext} extension")
-        for pct in (5, 20):
-            for r in conf:
+        for pct, rules in exp["pareto"]["deploy"]["descriptive"].items():
+            for r in rules:
                 add("C", m, f"w4p-{r}-f{pct}", ds, c0, sB["test"] + sB["repair"], 0, "descriptive frontier")
     gb = C["greedy_broad"]
     add("C", gb["model"], "fp16 capture x2 (restricted, broad)", s0, c0, 2 * bud["max_captured"], 0, "greedy adequacy")

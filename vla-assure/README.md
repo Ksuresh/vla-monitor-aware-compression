@@ -8,6 +8,15 @@ Models: π0.5, π0, SmolVLA (LeRobot), OpenVLA, OpenVLA-OFT (official repos), on
 > Status: complete code; analysis path tested on synthetic data (`pytest -q tests/`, 35 tests).
 > **No VLA has been run yet.** Every reported number must come from your own runs.
 
+## 0. Go/no-go gate (run this first)
+
+`VLA_gonogo.ipynb` (Colab, one T4): SmolVLA on LIBERO-Spatial, action expert fake-INT4, one Mahalanobis monitor.
+Compares W4 and three 15%-of-expert protection rules (alarm-aware, action-aware, random) on 175 paired test slots
+and prints a pre-stated decision table. Uses `quant_scope` (experiment.yaml) to restrict quantization and
+budgets to the expert, and LeRobot 0.6.1 in one environment (LIBERO assets download on first use).
+SmolVLA's `select_action` calls `_get_action_chunk`, not `predict_action_chunk`; the adapter wraps whichever
+one is used (checked against a SmolVLA-shaped stub on the real LeRobot 0.6.1 LIBERO env).
+
 ## 1. What the band controls, exactly
 
 One conformal band per (model, suite, condition, monitor, α), fitted on successful reference episodes
@@ -270,12 +279,15 @@ change estimates the population shift itself.
 
 ## 4c. Execution budget
 
+Deployed Stage C configurations are fixed by identity in `experiment.yaml: pareto.deploy` (never picked from
+pareto.csv); planning discordance uses train/calib/repair slots only, never test slots.
+
 Authoritative budget (stage figures elsewhere are its totals). K = extension trials per task per
 suite; 6 configurations (4 fake-quant + 2 real-kernel) × 2 suites × 10 tasks → +120K episodes →
 120K × 30 s / 3600 = 1.0·K GPU-hours. `python scripts/budget.py [--K k] [--measured]` → `results/budget/budget.csv` (model × configuration × suite ×
 condition: trials, shadows, GPU-hours, storage). Planning assumptions in `experiment.yaml: budget`,
-replaced by run.json timings after Stage A. At K = 40: 34 720 executions, ~336 GPU-hours, ~123 GB
-(A 13, B 135, C 188 GPU-hours); each extension trial per task ≈ 1 GPU-hour.
+replaced by run.json timings after Stage A. At K = 40: 35 270 executions, ~341 GPU-hours, ~124 GB
+(A 13, B 135, C 193 GPU-hours); each extension trial per task ≈ 1 GPU-hour.
 
 ## 5. Monitor applicability
 

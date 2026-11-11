@@ -1,0 +1,2 @@
+pair,joint_successes,FPR_diff,FPR_90lo,FPR_90hi,success_diff,joint_failures,TPR_diff
+w4p-margin_drift-f15 - w4p-action_drift-f15,56,0.0,0.0,0.0,-0.1,50,0.06
