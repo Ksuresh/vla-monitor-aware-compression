@@ -1,0 +1,1 @@
+{"choice": ["libero_10", "shift_strong"], "tried": {"libero_spatial+shift_strong": 0.98, "libero_10+nominal": 0.94, "libero_spatial+action_noise": 0.96, "libero_10+shift_strong": 0.9}}

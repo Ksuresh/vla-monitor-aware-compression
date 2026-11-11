@@ -1,0 +1,16 @@
+features,monitor,variant,success_fp16,success_var,joint_succ,FPR_fp16,FPR_var,n_new_failures,detect_NEW_failures
+both_layers,acc,cfg_denoise5,0.529,0.579,63,0.032,0.0,11,0.364
+both_layers,ext_mahalanobis,cfg_denoise5,0.529,0.579,63,0.063,0.032,11,0.636
+both_layers,mahalanobis,cfg_denoise5,0.529,0.579,63,0.016,0.254,11,1.0
+both_layers,rnd,cfg_denoise5,0.529,0.579,63,0.0,0.794,11,1.0
+both_layers,safe_mlp,cfg_denoise5,0.529,0.579,63,0.302,0.222,11,1.0
+expert_only,acc,cfg_denoise5,0.529,0.579,63,0.032,0.0,11,0.364
+expert_only,ext_mahalanobis,cfg_denoise5,0.529,0.579,63,0.063,0.032,11,0.636
+expert_only,mahalanobis,cfg_denoise5,0.529,0.579,63,0.0,1.0,11,1.0
+expert_only,rnd,cfg_denoise5,0.529,0.579,63,0.016,1.0,11,1.0
+expert_only,safe_mlp,cfg_denoise5,0.529,0.579,63,0.286,0.127,11,1.0
+vlm_only,acc,cfg_denoise5,0.529,0.579,63,0.032,0.0,11,0.364
+vlm_only,ext_mahalanobis,cfg_denoise5,0.529,0.579,63,0.063,0.032,11,0.636
+vlm_only,mahalanobis,cfg_denoise5,0.529,0.579,63,0.0,0.0,11,0.818
+vlm_only,rnd,cfg_denoise5,0.529,0.579,63,0.016,0.016,11,0.818
+vlm_only,safe_mlp,cfg_denoise5,0.529,0.579,63,0.206,0.206,11,0.909

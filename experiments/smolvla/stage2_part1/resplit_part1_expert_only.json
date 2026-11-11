@@ -1,0 +1,1005 @@
+{
+  "taps": [
+    "expert_last"
+  ],
+  "alpha": 0.1,
+  "splits": 20,
+  "variants": {
+    "w4_lm": {
+      "n_pairs": 140,
+      "transitions": {
+        "both_succeed": 18,
+        "new_failures": 56,
+        "rescued": 11,
+        "both_fail": 55
+      },
+      "mcnemar_p": 2.1457960315833694e-08,
+      "monitors": {
+        "mahalanobis": {
+          "n_joint_success": 18,
+          "n_var_success": 29,
+          "n_fp16_success": 74,
+          "n_new_failures": 56,
+          "preregistered": {
+            "split": 0,
+            "fpr_fp16_all": 0.013513513513513514,
+            "fpr_var_all": 1.0,
+            "k_fp16_all": 1,
+            "k_var_all": 29,
+            "fpr_var_rescued": 1.0,
+            "fpr_fp16": 0.0,
+            "fpr_var": 1.0,
+            "k_fp16": 0,
+            "k_var": 18,
+            "detect_new": 1.0,
+            "tpr_var": 1.0,
+            "task_fpr_var": {
+              "0": 1.0,
+              "2": 1.0,
+              "3": 1.0,
+              "6": 1.0,
+              "7": 1.0,
+              "8": 1.0
+            },
+            "auroc_fp16": 0.9975429975429976,
+            "auroc_var": 0.7853370611991302
+          },
+          "fixes_crossfit": {
+            "alpha_tol": 0.15,
+            "separate_pool_marginal": {
+              "guarantee": "marginal",
+              "n_required": 19,
+              "certify_max_alarms": 0,
+              "certify_exact_size": 0.045599448334722785,
+              "combined_failure_bound": NaN,
+              "n_fit_success": [
+                19,
+                19.0
+              ],
+              "feasible_share": 1.0,
+              "flag_rate": 1.0,
+              "certify_rate": 0.0,
+              "options": {
+                "inherited": {
+                  "fpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "tpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "p_violate": 1.0
+                },
+                "coral": {
+                  "fpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "tpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "p_violate": 1.0
+                },
+                "recal": {
+                  "fpr": [
+                    0.034482758620689655,
+                    0.034482758620689655,
+                    0.21379310344827585
+                  ],
+                  "tpr": [
+                    0.5855855855855856,
+                    0.5603603603603603,
+                    0.7747747747747747
+                  ],
+                  "p_violate": 0.2
+                },
+                "flag_then_recal": {
+                  "fpr": [
+                    0.034482758620689655,
+                    0.034482758620689655,
+                    0.21379310344827585
+                  ],
+                  "tpr": [
+                    0.5855855855855856,
+                    0.5603603603603603,
+                    0.7747747747747747
+                  ],
+                  "p_violate": 0.2
+                },
+                "certify_or_recal": {
+                  "fpr": [
+                    0.034482758620689655,
+                    0.034482758620689655,
+                    0.21379310344827585
+                  ],
+                  "tpr": [
+                    0.5855855855855856,
+                    0.5603603603603603,
+                    0.7747747747747747
+                  ],
+                  "p_violate": 0.2
+                }
+              }
+            },
+            "separate_pool_pac": {
+              "guarantee": "pac",
+              "n_required": 44,
+              "certify_max_alarms": 2,
+              "certify_exact_size": 0.029976383945513378,
+              "combined_failure_bound": 0.12845347416387387,
+              "n_fit_success": [
+                24,
+                24.0
+              ],
+              "feasible_share": 0.0,
+              "flag_rate": 1.0,
+              "certify_rate": 0.0,
+              "options": {
+                "inherited": {
+                  "fpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "tpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "p_violate": 1.0
+                },
+                "coral": {
+                  "fpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "tpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "p_violate": 1.0
+                }
+              }
+            },
+            "crossfit_marginal": {
+              "guarantee": "marginal",
+              "n_required": 19,
+              "certify_max_alarms": 0,
+              "certify_exact_size": 0.045599448334722785,
+              "combined_failure_bound": NaN,
+              "n_fit_success": [
+                8,
+                14.5
+              ],
+              "feasible_share": 0.1,
+              "flag_rate": 1.0,
+              "certify_rate": 0.0,
+              "options": {
+                "inherited": {
+                  "fpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "tpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "p_violate": 1.0
+                },
+                "coral": {
+                  "fpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "tpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "p_violate": 1.0
+                },
+                "recal": {
+                  "fpr": [
+                    0.0625,
+                    0.00625,
+                    0.11875
+                  ],
+                  "tpr": [
+                    0.6725277630883131,
+                    0.421351136964569,
+                    0.9237043892120571
+                  ],
+                  "p_violate": 0.0
+                },
+                "flag_then_recal": {
+                  "fpr": [
+                    0.0625,
+                    0.00625,
+                    0.11875
+                  ],
+                  "tpr": [
+                    0.6725277630883131,
+                    0.421351136964569,
+                    0.9237043892120571
+                  ],
+                  "p_violate": 0.0
+                },
+                "certify_or_recal": {
+                  "fpr": [
+                    0.0625,
+                    0.00625,
+                    0.11875
+                  ],
+                  "tpr": [
+                    0.6725277630883131,
+                    0.421351136964569,
+                    0.9237043892120571
+                  ],
+                  "p_violate": 0.0
+                }
+              }
+            },
+            "crossfit_pac": {
+              "guarantee": "pac",
+              "n_required": 44,
+              "certify_max_alarms": 2,
+              "certify_exact_size": 0.029976383945513378,
+              "combined_failure_bound": 0.12845347416387387,
+              "n_fit_success": [
+                16,
+                18.5
+              ],
+              "feasible_share": 0.0,
+              "flag_rate": 1.0,
+              "certify_rate": 0.0,
+              "options": {
+                "inherited": {
+                  "fpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "tpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "p_violate": 1.0
+                },
+                "coral": {
+                  "fpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "tpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "p_violate": 1.0
+                }
+              }
+            }
+          },
+          "fpr_fp16_all_ci95": [
+            0.0,
+            0.073
+          ],
+          "fpr_var_all_ci95": [
+            0.881,
+            1.0
+          ],
+          "fpr_fp16_ci95": [
+            0.0,
+            0.185
+          ],
+          "fpr_var_ci95": [
+            0.815,
+            1.0
+          ],
+          "over_splits": {
+            "fpr_fp16_all": [
+              0.04054054054054054,
+              0.0,
+              0.12162162162162163
+            ],
+            "fpr_var_all": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "fpr_fp16": [
+              0.0,
+              0.0,
+              0.1111111111111111
+            ],
+            "fpr_var": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "detect_new": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "tpr_var": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          },
+          "n_splits_ok": 21
+        },
+        "rnd": {
+          "n_joint_success": 18,
+          "n_var_success": 29,
+          "n_fp16_success": 74,
+          "n_new_failures": 56,
+          "preregistered": {
+            "split": 0,
+            "fpr_fp16_all": 0.02702702702702703,
+            "fpr_var_all": 1.0,
+            "k_fp16_all": 2,
+            "k_var_all": 29,
+            "fpr_var_rescued": 1.0,
+            "fpr_fp16": 0.0,
+            "fpr_var": 1.0,
+            "k_fp16": 0,
+            "k_var": 18,
+            "detect_new": 1.0,
+            "tpr_var": 1.0,
+            "task_fpr_var": {
+              "0": 1.0,
+              "2": 1.0,
+              "3": 1.0,
+              "6": 1.0,
+              "7": 1.0,
+              "8": 1.0
+            },
+            "auroc_fp16": 0.9969287469287469,
+            "auroc_var": 0.5880708294501398
+          },
+          "fixes_crossfit": {
+            "alpha_tol": 0.15,
+            "separate_pool_marginal": {
+              "guarantee": "marginal",
+              "n_required": 19,
+              "certify_max_alarms": 0,
+              "certify_exact_size": 0.045599448334722785,
+              "combined_failure_bound": NaN,
+              "n_fit_success": [
+                19,
+                19.0
+              ],
+              "feasible_share": 1.0,
+              "flag_rate": 1.0,
+              "certify_rate": 0.0,
+              "options": {
+                "inherited": {
+                  "fpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "tpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "p_violate": 1.0
+                },
+                "coral": {
+                  "fpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "tpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "p_violate": 1.0
+                },
+                "recal": {
+                  "fpr": [
+                    0.06896551724137931,
+                    0.0,
+                    0.22758620689655173
+                  ],
+                  "tpr": [
+                    0.45045045045045046,
+                    0.1891891891891892,
+                    0.5657657657657658
+                  ],
+                  "p_violate": 0.4
+                },
+                "flag_then_recal": {
+                  "fpr": [
+                    0.06896551724137931,
+                    0.0,
+                    0.22758620689655173
+                  ],
+                  "tpr": [
+                    0.45045045045045046,
+                    0.1891891891891892,
+                    0.5657657657657658
+                  ],
+                  "p_violate": 0.4
+                },
+                "certify_or_recal": {
+                  "fpr": [
+                    0.06896551724137931,
+                    0.0,
+                    0.22758620689655173
+                  ],
+                  "tpr": [
+                    0.45045045045045046,
+                    0.1891891891891892,
+                    0.5657657657657658
+                  ],
+                  "p_violate": 0.4
+                }
+              }
+            },
+            "separate_pool_pac": {
+              "guarantee": "pac",
+              "n_required": 44,
+              "certify_max_alarms": 2,
+              "certify_exact_size": 0.029976383945513378,
+              "combined_failure_bound": 0.12845347416387387,
+              "n_fit_success": [
+                24,
+                24.0
+              ],
+              "feasible_share": 0.0,
+              "flag_rate": 1.0,
+              "certify_rate": 0.0,
+              "options": {
+                "inherited": {
+                  "fpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "tpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "p_violate": 1.0
+                },
+                "coral": {
+                  "fpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "tpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "p_violate": 1.0
+                }
+              }
+            },
+            "crossfit_marginal": {
+              "guarantee": "marginal",
+              "n_required": 19,
+              "certify_max_alarms": 0,
+              "certify_exact_size": 0.045599448334722785,
+              "combined_failure_bound": NaN,
+              "n_fit_success": [
+                8,
+                14.5
+              ],
+              "feasible_share": 0.1,
+              "flag_rate": 1.0,
+              "certify_rate": 0.0,
+              "options": {
+                "inherited": {
+                  "fpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "tpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "p_violate": 1.0
+                },
+                "coral": {
+                  "fpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "tpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "p_violate": 1.0
+                },
+                "recal": {
+                  "fpr": [
+                    0.0625,
+                    0.00625,
+                    0.11875
+                  ],
+                  "tpr": [
+                    0.5842147012162877,
+                    0.4567821258593337,
+                    0.7116472765732417
+                  ],
+                  "p_violate": 0.0
+                },
+                "flag_then_recal": {
+                  "fpr": [
+                    0.0625,
+                    0.00625,
+                    0.11875
+                  ],
+                  "tpr": [
+                    0.5842147012162877,
+                    0.4567821258593337,
+                    0.7116472765732417
+                  ],
+                  "p_violate": 0.0
+                },
+                "certify_or_recal": {
+                  "fpr": [
+                    0.0625,
+                    0.00625,
+                    0.11875
+                  ],
+                  "tpr": [
+                    0.5842147012162877,
+                    0.4567821258593337,
+                    0.7116472765732417
+                  ],
+                  "p_violate": 0.0
+                }
+              }
+            },
+            "crossfit_pac": {
+              "guarantee": "pac",
+              "n_required": 44,
+              "certify_max_alarms": 2,
+              "certify_exact_size": 0.029976383945513378,
+              "combined_failure_bound": 0.12845347416387387,
+              "n_fit_success": [
+                16,
+                18.5
+              ],
+              "feasible_share": 0.0,
+              "flag_rate": 1.0,
+              "certify_rate": 0.0,
+              "options": {
+                "inherited": {
+                  "fpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "tpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "p_violate": 1.0
+                },
+                "coral": {
+                  "fpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "tpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "p_violate": 1.0
+                }
+              }
+            }
+          },
+          "fpr_fp16_all_ci95": [
+            0.003,
+            0.094
+          ],
+          "fpr_var_all_ci95": [
+            0.881,
+            1.0
+          ],
+          "fpr_fp16_ci95": [
+            0.0,
+            0.185
+          ],
+          "fpr_var_ci95": [
+            0.815,
+            1.0
+          ],
+          "over_splits": {
+            "fpr_fp16_all": [
+              0.04054054054054054,
+              0.013513513513513514,
+              0.13513513513513514
+            ],
+            "fpr_var_all": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "fpr_fp16": [
+              0.0,
+              0.0,
+              0.1111111111111111
+            ],
+            "fpr_var": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "detect_new": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "tpr_var": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          },
+          "n_splits_ok": 21
+        },
+        "safe_mlp": {
+          "n_joint_success": 18,
+          "n_var_success": 29,
+          "n_fp16_success": 74,
+          "n_new_failures": 56,
+          "preregistered": {
+            "split": 0,
+            "fpr_fp16_all": 0.28378378378378377,
+            "fpr_var_all": 0.896551724137931,
+            "k_fp16_all": 21,
+            "k_var_all": 26,
+            "fpr_var_rescued": 1.0,
+            "fpr_fp16": 0.2777777777777778,
+            "fpr_var": 0.8333333333333334,
+            "k_fp16": 5,
+            "k_var": 15,
+            "detect_new": 1.0,
+            "tpr_var": 1.0,
+            "task_fpr_var": {
+              "0": 0.8571428571428571,
+              "2": 1.0,
+              "3": 0.5,
+              "6": 1.0,
+              "7": 1.0,
+              "8": 1.0
+            },
+            "auroc_fp16": 0.8877968877968878,
+            "auroc_var": 0.644610127368748
+          },
+          "fixes_crossfit": {
+            "alpha_tol": 0.15,
+            "separate_pool_marginal": {
+              "guarantee": "marginal",
+              "n_required": 19,
+              "certify_max_alarms": 0,
+              "certify_exact_size": 0.045599448334722785,
+              "combined_failure_bound": NaN,
+              "n_fit_success": [
+                19,
+                19.0
+              ],
+              "feasible_share": 1.0,
+              "flag_rate": 1.0,
+              "certify_rate": 0.0,
+              "options": {
+                "inherited": {
+                  "fpr": [
+                    0.896551724137931,
+                    0.896551724137931,
+                    0.896551724137931
+                  ],
+                  "tpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "p_violate": 1.0
+                },
+                "coral": {
+                  "fpr": [
+                    0.2413793103448276,
+                    0.2413793103448276,
+                    0.2413793103448276
+                  ],
+                  "tpr": [
+                    0.972972972972973,
+                    0.972972972972973,
+                    0.972972972972973
+                  ],
+                  "p_violate": 1.0
+                },
+                "recal": {
+                  "fpr": [
+                    0.0,
+                    0.0,
+                    0.055172413793103434
+                  ],
+                  "tpr": [
+                    0.25225225225225223,
+                    0.1891891891891892,
+                    0.7909909909909909
+                  ],
+                  "p_violate": 0.0
+                },
+                "flag_then_recal": {
+                  "fpr": [
+                    0.0,
+                    0.0,
+                    0.055172413793103434
+                  ],
+                  "tpr": [
+                    0.25225225225225223,
+                    0.1891891891891892,
+                    0.7909909909909909
+                  ],
+                  "p_violate": 0.0
+                },
+                "certify_or_recal": {
+                  "fpr": [
+                    0.0,
+                    0.0,
+                    0.055172413793103434
+                  ],
+                  "tpr": [
+                    0.25225225225225223,
+                    0.1891891891891892,
+                    0.7909909909909909
+                  ],
+                  "p_violate": 0.0
+                }
+              }
+            },
+            "separate_pool_pac": {
+              "guarantee": "pac",
+              "n_required": 44,
+              "certify_max_alarms": 2,
+              "certify_exact_size": 0.029976383945513378,
+              "combined_failure_bound": 0.12845347416387387,
+              "n_fit_success": [
+                24,
+                24.0
+              ],
+              "feasible_share": 0.0,
+              "flag_rate": 1.0,
+              "certify_rate": 0.0,
+              "options": {
+                "inherited": {
+                  "fpr": [
+                    0.896551724137931,
+                    0.896551724137931,
+                    0.896551724137931
+                  ],
+                  "tpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "p_violate": 1.0
+                },
+                "coral": {
+                  "fpr": [
+                    0.2413793103448276,
+                    0.2413793103448276,
+                    0.2413793103448276
+                  ],
+                  "tpr": [
+                    0.972972972972973,
+                    0.972972972972973,
+                    0.972972972972973
+                  ],
+                  "p_violate": 1.0
+                }
+              }
+            },
+            "crossfit_marginal": {
+              "guarantee": "marginal",
+              "n_required": 19,
+              "certify_max_alarms": 0,
+              "certify_exact_size": 0.045599448334722785,
+              "combined_failure_bound": NaN,
+              "n_fit_success": [
+                8,
+                14.5
+              ],
+              "feasible_share": 0.1,
+              "flag_rate": 1.0,
+              "certify_rate": 0.0,
+              "options": {
+                "inherited": {
+                  "fpr": [
+                    0.8944444444444444,
+                    0.8333333333333334,
+                    0.9441176470588235
+                  ],
+                  "tpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "p_violate": 1.0
+                },
+                "coral": {
+                  "fpr": [
+                    0.24404761904761904,
+                    0.06785714285714285,
+                    0.44494949494949493
+                  ],
+                  "tpr": [
+                    0.9310344827586207,
+                    0.9029934687953556,
+                    0.9662209711470796
+                  ],
+                  "p_violate": 0.75
+                },
+                "recal": {
+                  "fpr": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  "tpr": [
+                    0.5039661554732946,
+                    0.49301956636700156,
+                    0.5149127445795875
+                  ],
+                  "p_violate": 0.0
+                },
+                "flag_then_recal": {
+                  "fpr": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  "tpr": [
+                    0.5039661554732946,
+                    0.49301956636700156,
+                    0.5149127445795875
+                  ],
+                  "p_violate": 0.0
+                },
+                "certify_or_recal": {
+                  "fpr": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  "tpr": [
+                    0.5039661554732946,
+                    0.49301956636700156,
+                    0.5149127445795875
+                  ],
+                  "p_violate": 0.0
+                }
+              }
+            },
+            "crossfit_pac": {
+              "guarantee": "pac",
+              "n_required": 44,
+              "certify_max_alarms": 2,
+              "certify_exact_size": 0.029976383945513378,
+              "combined_failure_bound": 0.12845347416387387,
+              "n_fit_success": [
+                16,
+                18.5
+              ],
+              "feasible_share": 0.0,
+              "flag_rate": 1.0,
+              "certify_rate": 0.0,
+              "options": {
+                "inherited": {
+                  "fpr": [
+                    0.8875,
+                    0.8250000000000001,
+                    1.0
+                  ],
+                  "tpr": [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "p_violate": 1.0
+                },
+                "coral": {
+                  "fpr": [
+                    0.2153846153846154,
+                    0.0,
+                    0.4549999999999999
+                  ],
+                  "tpr": [
+                    0.9321839080459771,
+                    0.885483870967742,
+                    0.971899841017488
+                  ],
+                  "p_violate": 0.8
+                }
+              }
+            }
+          },
+          "fpr_fp16_all_ci95": [
+            0.185,
+            0.401
+          ],
+          "fpr_var_all_ci95": [
+            0.726,
+            0.978
+          ],
+          "fpr_fp16_ci95": [
+            0.097,
+            0.535
+          ],
+          "fpr_var_ci95": [
+            0.586,
+            0.964
+          ],
+          "over_splits": {
+            "fpr_fp16_all": [
+              0.08108108108108109,
+              0.013513513513513514,
+              0.14864864864864866
+            ],
+            "fpr_var_all": [
+              0.7241379310344828,
+              0.20689655172413793,
+              1.0
+            ],
+            "fpr_fp16": [
+              0.0,
+              0.0,
+              0.1111111111111111
+            ],
+            "fpr_var": [
+              0.6111111111111112,
+              0.05555555555555555,
+              1.0
+            ],
+            "detect_new": [
+              1.0,
+              0.5178571428571429,
+              1.0
+            ],
+            "tpr_var": [
+              1.0,
+              0.5675675675675675,
+              1.0
+            ]
+          },
+          "n_splits_ok": 21
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,132 @@
+{
+  "checkpoint": "HuggingFaceVLA/smolvla_libero",
+  "baseline": "model-native mixed/bfloat16",
+  "quantization": "action expert fake INT4 RTN, no real 4-bit kernels",
+  "input": "single synthetic constant-image, zero-state, fixed-language observation",
+  "seeds": [
+    101,
+    123,
+    202,
+    303,
+    404
+  ],
+  "quantization_report": {
+    "bits": 4,
+    "group_size": 128,
+    "linear_quantized": 224,
+    "linear_kept_fp": 303,
+    "param_fraction_quantized": 0.1738,
+    "nominal_linear_weight_mem_ratio_vs_fp16": 0.8696,
+    "kept_examples": [
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.0.self_attn.k_proj",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.0.self_attn.v_proj",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.0.self_attn.q_proj",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.0.self_attn.out_proj",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.0.mlp.fc1",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.0.mlp.fc2",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.1.self_attn.k_proj",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.1.self_attn.v_proj",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.1.self_attn.q_proj",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.1.self_attn.out_proj",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.1.mlp.fc1",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.1.mlp.fc2",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.2.self_attn.k_proj",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.2.self_attn.v_proj",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.2.self_attn.q_proj",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.2.self_attn.out_proj",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.2.mlp.fc1",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.2.mlp.fc2",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.3.self_attn.k_proj",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.3.self_attn.v_proj"
+    ]
+  },
+  "per_seed": [
+    {
+      "seed": 101,
+      "action_relative_l2": 0.29098770022392273,
+      "expert_per_step_relative_l2": [
+        0.1292349249124527,
+        0.12582385540008545,
+        0.12528128921985626,
+        0.12468443065881729,
+        0.12699392437934875,
+        0.1327441781759262,
+        0.14481298625469208,
+        0.17457059025764465,
+        0.23176462948322296,
+        0.3118884563446045
+      ]
+    },
+    {
+      "seed": 123,
+      "action_relative_l2": 0.22042661905288696,
+      "expert_per_step_relative_l2": [
+        0.12631645798683167,
+        0.12274416536092758,
+        0.12210702151060104,
+        0.12066470831632614,
+        0.12122759968042374,
+        0.12407922744750977,
+        0.1283619999885559,
+        0.13653242588043213,
+        0.174698144197464,
+        0.2330256849527359
+      ]
+    },
+    {
+      "seed": 202,
+      "action_relative_l2": 0.2679479122161865,
+      "expert_per_step_relative_l2": [
+        0.12895679473876953,
+        0.12794220447540283,
+        0.12917275726795197,
+        0.12969037890434265,
+        0.1334751844406128,
+        0.13854438066482544,
+        0.15038269758224487,
+        0.18019263446331024,
+        0.2223757654428482,
+        0.2532736361026764
+      ]
+    },
+    {
+      "seed": 303,
+      "action_relative_l2": 0.3682369291782379,
+      "expert_per_step_relative_l2": [
+        0.12724824249744415,
+        0.12412142753601074,
+        0.12383843213319778,
+        0.12584681808948517,
+        0.1342305690050125,
+        0.1575833559036255,
+        0.1966368705034256,
+        0.23577097058296204,
+        0.26869475841522217,
+        0.3301270306110382
+      ]
+    },
+    {
+      "seed": 404,
+      "action_relative_l2": 0.23110246658325195,
+      "expert_per_step_relative_l2": [
+        0.1308070719242096,
+        0.12841002643108368,
+        0.12790483236312866,
+        0.1271793395280838,
+        0.12852847576141357,
+        0.13156898319721222,
+        0.14095962047576904,
+        0.15835973620414734,
+        0.18691807985305786,
+        0.27345818281173706
+      ]
+    }
+  ],
+  "summary": {
+    "action_drift_mean": 0.2757403254508972,
+    "action_drift_std_sample": 0.05895118787884712,
+    "final_expert_drift_mean": 0.2803545892238617,
+    "final_expert_drift_std_sample": 0.040288474410772324
+  },
+  "limitations": "Multiple noise seeds on ONE synthetic input; no task success, failure labels, monitor calibration, or deployed INT4 efficiency."
+}

@@ -42,6 +42,16 @@ def _pixels(batch, size: int = 24):
     return None
 
 
+def _chunk_method(policy) -> str:
+    """Name of the method LeRobot's select_action uses to produce a new action chunk."""
+    import inspect
+    try:
+        src = inspect.getsource(type(policy).select_action)
+    except (OSError, TypeError):
+        return "predict_action_chunk"
+    return "_get_action_chunk" if "self._get_action_chunk(" in src else "predict_action_chunk"
+
+
 def _seed_all(seed: int) -> None:
     np.random.seed(seed % 2**32)
     torch.manual_seed(seed)
@@ -49,10 +59,24 @@ def _seed_all(seed: int) -> None:
         torch.cuda.manual_seed_all(seed)
 
 
+def _require_lerobot_06():
+    """This adapter needs LeRobot 0.6.x: LiberoEnv(task_ids=...), rollout(predicted_latents_callback=...)
+    and the public LiberoEnv.init_state_id that pins each trial's initial state. LeRobot 0.4.x has none of
+    these (its init state lives in a private _init_state_id), so setting init_state_id there would be
+    silently ignored and trial pairing across variants would break. Fail loudly instead."""
+    from importlib.metadata import version
+    v = version("lerobot")
+    major, minor = (int(x) for x in v.split(".")[:2])
+    if (major, minor) < (0, 6):
+        raise RuntimeError(f"lerobot {v} found; this pipeline needs lerobot>=0.6,<0.7 (Python >= 3.12). "
+                           "In Colab: pip install 'lerobot[smolvla,libero]==0.6.1'")
+
+
 class LeRobotSession:
     def __init__(self, model_name: str, model_cfg: dict, variant_name: str, variant: dict, suite: str,
                  device: str = "cuda", n_alt_samples: int = 0, condition: str = "nominal",
                  condition_spec: dict | None = None, shadow: dict | None = None, base_seed: int = 7, **_):
+        _require_lerobot_06()
         from lerobot.envs.configs import LiberoEnv
         from lerobot.policies import make_pre_post_processors
 
@@ -70,9 +94,13 @@ class LeRobotSession:
             preprocessor_overrides={"device_processor": {"device": device}},
         )
         self.tap = FeatureTap(taps=dict(model_cfg["tap"])).attach(self.policy)
-        self._orig_predict = self.policy.predict_action_chunk
+        # The chunk method that select_action actually calls: SmolVLA's select_action calls
+        # _get_action_chunk directly (not predict_action_chunk); pi0/pi0.5 call predict_action_chunk.
+        # Wrapping the wrong one would silently log no features and apply no camera perturbation.
+        self._chunk_attr = _chunk_method(self.policy)
+        self._orig_predict = getattr(self.policy, self._chunk_attr)
         self._state = {"step": 0, "ep": None, "capture": None, "cap_max": 0, "seed": 0}
-        self.policy.predict_action_chunk = self._predict_and_log
+        setattr(self.policy, self._chunk_attr, self._predict_and_log)
         if self.perturb.acts:
             self._wrap_select_action()
         self.sampler = {  # must be identical across variants (checked by 03_evaluate)
@@ -87,7 +115,7 @@ class LeRobotSession:
         for sname, sspec in (shadow or {}).items():
             pol, _, sck, rep = self._build(sname, sspec)
             tap = FeatureTap(taps=dict(model_cfg["tap"])).attach(pol)
-            self.shadows[sname] = (pol, tap, pol.predict_action_chunk)
+            self.shadows[sname] = (pol, tap, getattr(pol, _chunk_method(pol)))
             self.report.setdefault("shadows", {})[sname] = rep
         _ = LiberoEnv  # imported for side effects of registering the env type
 
@@ -102,20 +130,28 @@ class LeRobotSession:
         pcfg.device = self.device
         if self.model_cfg.get("n_action_steps") and hasattr(pcfg, "n_action_steps"):
             pcfg.n_action_steps = int(self.model_cfg["n_action_steps"])
+        # numeric precision of the whole policy (e.g. pi0.5 on a T4: 'float32' or 'bfloat16'); same for every variant
+        if self.model_cfg.get("dtype") and hasattr(pcfg, "dtype"):
+            pcfg.dtype = str(self.model_cfg["dtype"])
+        # inference-configuration variants (kind: config): same weights, different runtime knobs
+        for knob in ("n_action_steps", "num_steps"):
+            if variant.get(knob) is not None and hasattr(pcfg, knob):
+                setattr(pcfg, knob, int(variant[knob]))
         policy = make_policy(cfg=pcfg, env_cfg=LiberoEnv(task=self.suite, task_ids=[0]))
         policy.eval()
         report = apply_variant(policy, self.model_name, variant)
-        report.update(model=self.model_name, variant=variant_name, suite=self.suite, checkpoint=ckpt)
+        report.update(model=self.model_name, variant=variant_name, suite=self.suite, checkpoint=ckpt,
+                      dtype=str(getattr(pcfg, "dtype", "default")))
         return policy, pcfg, ckpt, report
 
     # -- called by LeRobot's select_action whenever its action queue is empty
-    def _predict_and_log(self, batch, **kw):
+    def _predict_and_log(self, batch, *args, **kw):
         st = self._state
         batch = self.perturb.torch_batch(batch)
         if st["capture"] is not None and len(st["capture"]) < st["cap_max"]:
             st["capture"].append(copy.deepcopy(batch))
         t0 = time.perf_counter()
-        chunk = self._orig_predict(batch, **kw)
+        chunk = self._orig_predict(batch, *args, **kw)
         if torch.cuda.is_available():
             torch.cuda.synchronize()
         self.query_seconds.append(time.perf_counter() - t0)
@@ -133,7 +169,7 @@ class LeRobotSession:
             # otherwise a run with shadows would not be paired with a run without them.
             with torch.random.fork_rng(devices=[torch.cuda.current_device()] if torch.cuda.is_available() else []):
                 torch.manual_seed(st["seed"] * 104729 + st["step"] + zlib.crc32(sname.encode()))
-                sch = predict(batch, **kw)
+                sch = predict(batch, *args, **kw)
             shadow_out[sname] = ({k: v[0].numpy() for k, v in (tap.pop() or {}).items()}, sch[0].float().cpu().numpy())
         if st["ep"] is not None:
             feats = {k: v[0].numpy() for k, v in feats.items()}

@@ -1,0 +1,16 @@
+features,monitor,variant,success_fp16,success_var,joint_succ,FPR_fp16,FPR_var,n_new_failures,detect_NEW_failures
+both_layers,acc,w8,0.529,0.521,62,0.016,0.048,12,0.833
+both_layers,ext_mahalanobis,w8,0.529,0.521,62,0.032,0.048,12,0.5
+both_layers,mahalanobis,w8,0.529,0.521,62,0.032,0.065,12,1.0
+both_layers,rnd,w8,0.529,0.521,62,0.016,0.097,12,1.0
+both_layers,safe_mlp,w8,0.529,0.521,62,0.29,0.29,12,1.0
+expert_only,acc,w8,0.529,0.521,62,0.016,0.048,12,0.833
+expert_only,ext_mahalanobis,w8,0.529,0.521,62,0.032,0.048,12,0.5
+expert_only,mahalanobis,w8,0.529,0.521,62,0.0,0.065,12,1.0
+expert_only,rnd,w8,0.529,0.521,62,0.016,0.065,12,1.0
+expert_only,safe_mlp,w8,0.529,0.521,62,0.306,0.21,12,1.0
+vlm_only,acc,w8,0.529,0.521,62,0.016,0.048,12,0.833
+vlm_only,ext_mahalanobis,w8,0.529,0.521,62,0.032,0.048,12,0.5
+vlm_only,mahalanobis,w8,0.529,0.521,62,0.016,0.032,12,0.833
+vlm_only,rnd,w8,0.529,0.521,62,0.032,0.065,12,0.917
+vlm_only,safe_mlp,w8,0.529,0.521,62,0.194,0.21,12,0.917

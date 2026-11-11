@@ -1,19 +1,31 @@
-# Monitor-Aware VLA Compression
+# Calibrated Until Changed
 
-Research repository for testing whether monitor-aware mixed precision preserves failure-monitor reliability better than action-aware mixed precision at matched memory budgets.
+Research repository for **Calibrated Until Changed: Keeping Robot Failure Monitors Reliable After Model Compression**
+(target: IEEE RA-L). Question: when a vision-language-action (VLA) policy is quantized, fine-tuned or run with
+different inference settings, does its learned failure monitor keep its stated false-alarm rate, and how can a
+deployer tell and fix it before release?
 
-## Existing code assessment
+| Folder | What |
+|---|---|
+| `vla-assure/` | Experiment code: LeRobot/OpenVLA adapters, feature taps, fake quantization, monitors, functional conformal calibration, shadow replay, evaluation, release-option comparison (`scripts/resplit.py`), 38 CPU tests |
+| `vla-assure/notebooks/` | The Kaggle notebooks that produced every result (and `builders/`, the scripts that generate them) |
+| `experiments/` | All results: per-trial CSVs, re-split/release JSONs, run metadata, and `summary_smolvla.csv` (main table). See `experiments/README.md` |
+| `paper/` | Current manuscript draft (Word) |
 
-The supplied `vla-assure.zip` already contains a substantial Python experiment implementation: LeRobot/OpenVLA adapters, feature hooks, quantization, monitors, conformal calibration, sensitivity-based selection, evaluation, reporting, and 36 unit/integration tests.
+## Status (November 2026)
 
-The uploaded archive was tested locally with `PYTHONPATH=src pytest -q tests/test_pipeline.py`: **36 tests passed**. This verifies synthetic/unit code paths, **not** actual VLA or LIBERO experiments. No VLA benchmark results exist yet.
+- **SmolVLA, LIBERO-Spatial: complete.** Five changes (W4 expert, W4 language model + expert, W8 expert, 5 denoising
+  steps, 5 actions per call). A monitor breaks when, and only when, the change touches what it reads; shadow replay
+  predicted the closed-loop outcome in all four changes it was run on; recalibration restores false-alarm control,
+  label-free realignment does not.
+- **pi0.5, LIBERO-10 + strong camera shift: reference run done** (400 episodes, success 0.945); variants pending.
 
-## Integration plan
+## Tests
 
-1. Import the supplied `vla-assure/` source tree as the initial codebase, preserving paths.
-2. Add a CI workflow to run `PYTHONPATH=src pytest -q tests/test_pipeline.py` on a CPU runner.
-3. Check real checkpoint compatibility and LIBERO execution before making empirical claims.
-4. Run one SmolVLA + one monitor comparison of action-aware versus monitor-aware allocations at matched parameter budgets.
-5. Add independent holdout monitor, executed-trajectory metrics and real INT4 efficiency checks.
+```
+cd vla-assure && PYTHONPATH=src python -m pytest -q tests
+```
 
-**Caution:** Fake INT4 quantization does not establish actual GPU memory or latency savings. Calibration, selection and test data must remain disjoint.
+They check the analysis pipeline on synthetic rollouts; they do not run a VLA or LIBERO.
+
+**Caution:** fake INT4 quantization does not establish real GPU memory or latency savings.

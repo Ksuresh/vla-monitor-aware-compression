@@ -1,0 +1,182 @@
+{
+  "checkpoint": "HuggingFaceVLA/smolvla_libero",
+  "baseline_precision": "model-native mixed/bfloat16",
+  "quantization": "fake weight-only symmetric INT4, action-expert Linear layers only",
+  "noise_seed": 123,
+  "input": "synthetic constant images, zero state, fixed instruction",
+  "quantization_report": {
+    "bits": 4,
+    "group_size": 128,
+    "linear_quantized": 224,
+    "linear_kept_fp": 303,
+    "param_fraction_quantized": 0.1738,
+    "nominal_linear_weight_mem_ratio_vs_fp16": 0.8696,
+    "kept_examples": [
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.0.self_attn.k_proj",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.0.self_attn.v_proj",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.0.self_attn.q_proj",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.0.self_attn.out_proj",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.0.mlp.fc1",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.0.mlp.fc2",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.1.self_attn.k_proj",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.1.self_attn.v_proj",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.1.self_attn.q_proj",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.1.self_attn.out_proj",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.1.mlp.fc1",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.1.mlp.fc2",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.2.self_attn.k_proj",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.2.self_attn.v_proj",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.2.self_attn.q_proj",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.2.self_attn.out_proj",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.2.mlp.fc1",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.2.mlp.fc2",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.3.self_attn.k_proj",
+      "model.vlm_with_expert.vlm.model.vision_model.encoder.layers.3.self_attn.v_proj"
+    ]
+  },
+  "action_drift": {
+    "shape": [
+      1,
+      50,
+      7
+    ],
+    "mae": 0.06345498561859131,
+    "rmse": 0.13387297093868256,
+    "max_abs": 1.8812450170516968,
+    "relative_l2": 0.22042661905288696
+  },
+  "feature_drift": {
+    "vlm_last": {
+      "call_count": 1,
+      "per_call": [
+        {
+          "shape": [
+            1,
+            141,
+            960
+          ],
+          "mae": 0.0,
+          "rmse": 0.0,
+          "max_abs": 0.0,
+          "relative_l2": 0.0
+        }
+      ]
+    },
+    "expert_last": {
+      "call_count": 10,
+      "per_call": [
+        {
+          "shape": [
+            1,
+            50,
+            480
+          ],
+          "mae": 0.1013573408126831,
+          "rmse": 0.1263161301612854,
+          "max_abs": 0.5859375,
+          "relative_l2": 0.12631645798683167
+        },
+        {
+          "shape": [
+            1,
+            50,
+            480
+          ],
+          "mae": 0.0984220802783966,
+          "rmse": 0.12274498492479324,
+          "max_abs": 0.546875,
+          "relative_l2": 0.12274416536092758
+        },
+        {
+          "shape": [
+            1,
+            50,
+            480
+          ],
+          "mae": 0.09767773747444153,
+          "rmse": 0.12210900336503983,
+          "max_abs": 0.53125,
+          "relative_l2": 0.12210702151060104
+        },
+        {
+          "shape": [
+            1,
+            50,
+            480
+          ],
+          "mae": 0.09642031043767929,
+          "rmse": 0.12066531181335449,
+          "max_abs": 0.53125,
+          "relative_l2": 0.12066470831632614
+        },
+        {
+          "shape": [
+            1,
+            50,
+            480
+          ],
+          "mae": 0.0967397689819336,
+          "rmse": 0.1212288960814476,
+          "max_abs": 0.521484375,
+          "relative_l2": 0.12122759968042374
+        },
+        {
+          "shape": [
+            1,
+            50,
+            480
+          ],
+          "mae": 0.09899327903985977,
+          "rmse": 0.12407760322093964,
+          "max_abs": 0.5234375,
+          "relative_l2": 0.12407922744750977
+        },
+        {
+          "shape": [
+            1,
+            50,
+            480
+          ],
+          "mae": 0.10212671011686325,
+          "rmse": 0.12836311757564545,
+          "max_abs": 0.498046875,
+          "relative_l2": 0.1283619999885559
+        },
+        {
+          "shape": [
+            1,
+            50,
+            480
+          ],
+          "mae": 0.10810182988643646,
+          "rmse": 0.13653896749019623,
+          "max_abs": 0.609375,
+          "relative_l2": 0.13653242588043213
+        },
+        {
+          "shape": [
+            1,
+            50,
+            480
+          ],
+          "mae": 0.12457025051116943,
+          "rmse": 0.1746985912322998,
+          "max_abs": 1.796875,
+          "relative_l2": 0.174698144197464
+        },
+        {
+          "shape": [
+            1,
+            50,
+            480
+          ],
+          "mae": 0.1543436348438263,
+          "rmse": 0.23302899301052094,
+          "max_abs": 3.09765625,
+          "relative_l2": 0.2330256849527359
+        }
+      ]
+    }
+  },
+  "limitations": "No LIBERO rollouts, no ground-truth failure labels, no calibration, no real INT4 kernels or speed/memory measurements."
+}

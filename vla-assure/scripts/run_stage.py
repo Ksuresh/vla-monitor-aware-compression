@@ -144,16 +144,22 @@ def main():
         for i in range(0, len(pv), 5):  # 5 shadows per pass keeps GPU memory bounded
             collect(m, "fp16", s, c, R, pv[i:i + 5])
         print("Before deploying: size the detection component of families F2-F4 (pre-registered, configs: families.detection):")
-        print("  python scripts/detection_feasibility.py --plan --p_fail <F_prop> <F_base> --rho <lower 80% bound, Stage A> "
-              "--disc_hat <upper 80% bound of alarm discordance on reference failures, this shadow pass>")
+        print("  python scripts/detection_feasibility.py --plan --joint_counts <n11 n10 n01 n00 from the Stage A pairs> "
+              "--disc_counts <x n: alarm disagreements among reference failures of TRAIN/CALIB/REPAIR slots only>")
+        print("  python scripts/f2_power.py --size   (K_joint; final K = max(K_det, K_joint))")
+        print("  NEVER use test-slot shadow results for planning or for choosing configurations.")
         print("  -> results/power/stage_c_sizing.json gives K; add --extension K to EVERY deployed 10% variant below")
         print("     (INFEASIBLE -> detection not confirmable, the method claim is withheld; run the frontier anyway)")
-        print("After this pass: pick the frontier from results/tables/pareto.csv and deploy those variants on BOTH")
-        print("suites (20 task clusters, needed for confirmatory rule-vs-rule contrasts):")
+        dep = exp["pareto"]["deploy"]
+        print("Deploy the PRE-SPECIFIED configurations (experiment.yaml: pareto.deploy; fixed before Stage C, never")
+        print("chosen from pareto.csv) on BOTH suites (20 task clusters):")
         for ds in st.get("pareto_deploy_suites", [s]):
             print(f"  python scripts/01_collect.py --model {m} --variant fp16 --suite {ds} --condition {c} --episodes {R}")
-            print(f"  python scripts/01_collect.py --model {m} --variant w4p-<rule>-f<pct> --suite {ds} --condition {c} "
-                  f"--episodes {R} [--extension K for f10]")
+            for grp, ext_ in (("confirmatory", " --extension K"), ("descriptive", "")):
+                for pct, rules in dep[grp].items():
+                    for r in rules:
+                        print(f"  python scripts/01_collect.py --model {m} --variant w4p-{r}-f{pct} --suite {ds} "
+                              f"--condition {c} --episodes {R}{ext_}   # {grp}")
         print("Evaluate each deployed suite with the selection monitor, its independent replicate and other families:")
         for ds in st.get("pareto_deploy_suites", [s]):
             print(f"  python scripts/03_evaluate.py --model {m} --key {key(ds, c)} --monitors "

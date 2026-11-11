@@ -1,0 +1,41 @@
+{
+  "checkpoint": "HuggingFaceVLA/smolvla_libero",
+  "test_type": "synthetic constant-image, zero-state inference smoke test",
+  "action_shape": [
+    1,
+    50,
+    7
+  ],
+  "actions_finite": true,
+  "hooks": {
+    "vlm_last": {
+      "call_count": 1,
+      "first_call_tensors": [
+        {
+          "shape": [
+            1,
+            141,
+            960
+          ],
+          "dtype": "torch.bfloat16",
+          "finite": true
+        }
+      ]
+    },
+    "expert_last": {
+      "call_count": 10,
+      "first_call_tensors": [
+        {
+          "shape": [
+            1,
+            50,
+            480
+          ],
+          "dtype": "torch.bfloat16",
+          "finite": true
+        }
+      ]
+    }
+  },
+  "limitations": "No physical observations, failure labels, quantization, calibration, or robot rollout."
+}

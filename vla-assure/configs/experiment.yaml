@@ -33,6 +33,16 @@ variants:
   fp16:            {kind: reference}
   w8:              {kind: quant, bits: 8, group_size: 128}
   w4:              {kind: quant, bits: 4, group_size: 128}
+  # whole-language-model variants: the VLM's language model AND the action expert (vision encoder kept fp16,
+  # as in NVIDIA's GR00T Thor recipe that keeps the vision tower at higher precision)
+  w4_lm:           {kind: quant, bits: 4, group_size: 128, own_scope: true,
+                    include: ["model.vlm_with_expert.vlm.model.text_model.*", "model.vlm_with_expert.lm_expert.*"]}
+  w8_lm:           {kind: quant, bits: 8, group_size: 128, own_scope: true,
+                    include: ["model.vlm_with_expert.vlm.model.text_model.*", "model.vlm_with_expert.lm_expert.*"]}
+  # inference-configuration shift: same fp16 weights, different runtime knobs than the calibrated setting
+  cfg_steps5:      {kind: config, n_action_steps: 5}
+  cfg_steps20:     {kind: config, n_action_steps: 20}
+  cfg_denoise5:    {kind: config, num_steps: 5}
   w4_vision_fp:    {kind: quant, bits: 4, group_size: 128, exclude: ["vision", "siglip", "vision_tower"]}
   bnb8:            {kind: bnb, bits: 8}                # OpenVLA only: real bitsandbytes INT8 (true memory numbers)
   bnb4:            {kind: bnb, bits: 4}                # OpenVLA only: real bitsandbytes NF4
@@ -64,6 +74,14 @@ variants:
 pareto:
   rules: [margin_drift, margin_greedy, score_drift, feature_drift, action_drift, weight_error, edge, random]
   protect_pct: [5, 10, 20]
+  # Deployed (executed) configurations, FIXED BY IDENTITY before Stage C; never picked from results. Each
+  # rule's protected set comes from the selection set of captured development episodes only. Shadow
+  # results on test slots are diagnostics and never choose a configuration, budget or baseline.
+  deploy:
+    confirmatory: {10: [margin_drift, action_drift, weight_error, random]}   # families F2-F4 (+ K extension)
+    descriptive: {10: [margin_greedy], 5: [margin_drift, action_drift, weight_error, random],
+                  20: [margin_drift, action_drift, weight_error, random]}
+  # shadow-only (observation-controlled diagnostics, not executed): score_drift, feature_drift, edge
 
 # LIBERO is near-saturated for strong VLAs, which leaves too few failures to train or test monitors.
 # Seeded camera shifts (identical draws for every variant of a trial) raise failure rates.
