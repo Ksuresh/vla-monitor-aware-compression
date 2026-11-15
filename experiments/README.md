@@ -55,6 +55,7 @@ Under 5 actions per call only the output-level monitor (action-chunk consistency
 | `pi05/part1/` | Condition check (`pi05_condition.json`: LIBERO-Spatial is too easy, 0.94-1.00; chosen LIBERO-10 + strong camera shift, 0.90 in the check) and the 400-episode reference run (success 0.945) |
 | `pi05/part2/` | W4 on the action expert (19 % of parameters), 140 paired test slots; Kaggle version 6 |
 | `pi05/part3/` | W4 on language model + expert (74 % of parameters), 140 paired test slots; Kaggle version 8 |
+| `pi05/part4/` | W8 on the action expert (19 % of parameters), 140 paired test slots; Kaggle version 9 |
 
 Each `pi05/partN/` holds `pi05_trials_<placement>.csv`, `pi05_resplit_<placement>.json` and `run_<variant>.json`
 (same formats as SmolVLA). No repair pools were collected for pi0.5 (GPU budget), so release options use cross-fit only.
@@ -65,8 +66,9 @@ Headline (Mahalanobis, false alarms on all successes, fp16 -> changed policy; te
 |---|---|---|---|---|
 | W4, action expert | 0.91 -> 0.94 | 0.05 -> 0.08 | 0.09 -> 1.00 | 0.02 -> 1.00 |
 | W4, language model + expert | 0.91 -> 0.91 | 0.05 -> 0.85 | 0.09 -> 1.00 | 0.02 -> 1.00 |
+| W8, action expert | 0.91 -> 0.93 | 0.05 -> 0.05 | 0.09 -> 0.14 | 0.02 -> 0.18 |
 
-Pending: W8 on the action expert (PART 4, Kaggle version 9).
+Under W8, RND moves more (expert-only 0.11 -> 0.68); VL-only monitors and both controls stay put.
 
 `pi05/kaggle_notebook49b3154248_as_run.ipynb` is the notebook exactly as it ran on Kaggle (downloaded 15 Nov 2026,
 PART = 4). `vla-assure/notebooks/VLA_pi05_full.ipynb` (built by `builders/make_pi05_full.py`) has identical code cells;
