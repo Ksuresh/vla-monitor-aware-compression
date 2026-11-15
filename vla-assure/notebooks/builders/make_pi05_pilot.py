@@ -2,9 +2,11 @@
 Answers: does it load and run on a T4 (float32 vs bfloat16), seconds per episode, success, do the feature taps fire,
 does 4-/8-bit quantization of its action expert apply, does the second checkpoint (update) load, can a second
 process use GPU 1, and does a shadow copy fit in memory. No experiment data is produced."""
+import pathlib
+NB = pathlib.Path(__file__).resolve().parents[1]   # vla-assure/notebooks: builders read and write notebooks here
 import json
 
-base = json.load(open("/home/claude/VLA_gonogo_kaggle.ipynb"))["cells"]
+base = json.load(open(NB / "VLA_gonogo_kaggle.ipynb"))["cells"]
 md = lambda s: {"cell_type": "markdown", "metadata": {}, "source": s.strip("\n")}  # noqa: E731
 code = lambda s: {"cell_type": "code", "metadata": {}, "execution_count": None, "outputs": [], "source": s.strip("\n")}  # noqa: E731
 
@@ -163,5 +165,5 @@ nb = {"cells": C, "metadata": {"kernelspec": {"display_name": "Python 3", "langu
                                "language_info": {"name": "python"},
                                "kaggle": {"accelerator": "nvidiaTeslaT4", "isInternetEnabled": True, "isGpuEnabled": True}},
       "nbformat": 4, "nbformat_minor": 4}
-json.dump(nb, open("/home/claude/VLA_pi05_pilot.ipynb", "w"), indent=1)
+json.dump(nb, open(NB / "VLA_pi05_pilot.ipynb", "w"), indent=1)
 print("cells", len(C))

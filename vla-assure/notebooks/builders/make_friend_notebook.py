@@ -1,9 +1,11 @@
 """Builds VLA_stage2_variants.ipynb: the next SmolVLA variants (whole-LM compression, W8, runtime-config shift),
 runnable on a fresh Kaggle account. Reuses the setup cells of VLA_gonogo_kaggle.ipynb; needs the reference runs
 (dataset gonogo-v5) and the latest vla-assure code as inputs. Two commits: PART = 1, then PART = 2."""
+import pathlib
+NB = pathlib.Path(__file__).resolve().parents[1]   # vla-assure/notebooks: builders read and write notebooks here
 import json
 
-base = json.load(open("/home/claude/VLA_gonogo_kaggle.ipynb"))["cells"]
+base = json.load(open(NB / "VLA_gonogo_kaggle.ipynb"))["cells"]
 md = lambda s: {"cell_type": "markdown", "metadata": {}, "source": s.strip("\n")}  # noqa: E731
 code = lambda s: {"cell_type": "code", "metadata": {}, "execution_count": None, "outputs": [], "source": s.strip("\n")}  # noqa: E731
 
@@ -147,5 +149,5 @@ nb = {"cells": C, "metadata": {"kernelspec": {"display_name": "Python 3", "langu
                                "language_info": {"name": "python"},
                                "kaggle": {"accelerator": "nvidiaTeslaT4", "isInternetEnabled": True, "isGpuEnabled": True}},
       "nbformat": 4, "nbformat_minor": 4}
-json.dump(nb, open("/home/claude/VLA_stage2_variants.ipynb", "w"), indent=1)
+json.dump(nb, open(NB / "VLA_stage2_variants.ipynb", "w"), indent=1)
 print("cells", len(C))

@@ -1,5 +1,7 @@
 """Builds VLA_resplit_cpu.ipynb: CPU-only robustness check (20 calibration re-splits, exact CIs, paired transitions) re-evaluation of the go/no-go rollouts with two monitor feature sets
 (both layers vs action-expert only), including detection of the NEW failures 4-bit introduced. No robot runs."""
+import pathlib
+NB = pathlib.Path(__file__).resolve().parents[1]   # vla-assure/notebooks: builders read and write notebooks here
 import json
 
 cells = []
@@ -62,5 +64,5 @@ nb = {"cells": cells, "metadata": {"kernelspec": {"display_name": "Python 3", "l
                                    "language_info": {"name": "python"},
                                    "kaggle": {"accelerator": "none", "isInternetEnabled": False, "isGpuEnabled": False}},
       "nbformat": 4, "nbformat_minor": 4}
-json.dump(nb, open("/home/claude/VLA_resplit_cpu.ipynb", "w"), indent=1)
+json.dump(nb, open(NB / "VLA_resplit_cpu.ipynb", "w"), indent=1)
 print("cells", len(cells))

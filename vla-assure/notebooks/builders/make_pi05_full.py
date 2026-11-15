@@ -3,10 +3,12 @@ PART 1: pick a condition with 55-88 % fp16 success, then the 400 pre-registered 
 PART 2: W4 and W8 on the action expert.   PART 3: W4 on language model + expert, and the second checkpoint.
 PART 4 (optional): 5 denoising steps and 5 actions per call.
 Each part after 1 needs the previous part's output attached (it resumes from it). Both GPUs run in parallel."""
+import pathlib
+NB = pathlib.Path(__file__).resolve().parents[1]   # vla-assure/notebooks: builders read and write notebooks here
 import json
 
-base = json.load(open("/home/claude/VLA_gonogo_kaggle.ipynb"))["cells"]
-pil = json.load(open("/home/claude/VLA_pi05_pilot.ipynb"))["cells"]
+base = json.load(open(NB / "VLA_gonogo_kaggle.ipynb"))["cells"]
+pil = json.load(open(NB / "VLA_pi05_pilot.ipynb"))["cells"]
 md = lambda s: {"cell_type": "markdown", "metadata": {}, "source": s.strip("\n")}  # noqa: E731
 code = lambda s: {"cell_type": "code", "metadata": {}, "execution_count": None, "outputs": [], "source": s.strip("\n")}  # noqa: E731
 
@@ -164,5 +166,5 @@ nb = {"cells": C, "metadata": {"kernelspec": {"display_name": "Python 3", "langu
                                "language_info": {"name": "python"},
                                "kaggle": {"accelerator": "nvidiaTeslaT4", "isInternetEnabled": True, "isGpuEnabled": True}},
       "nbformat": 4, "nbformat_minor": 4}
-json.dump(nb, open("/home/claude/VLA_pi05_full.ipynb", "w"), indent=1)
+json.dump(nb, open(NB / "VLA_pi05_full.ipynb", "w"), indent=1)
 print("cells", len(C))
