@@ -1,10 +1,10 @@
 # Experiment results: Calibrated Until Changed
 
-Results behind the paper *Calibrated Until Changed: Keeping Robot Failure Monitors Reliable After Model Compression*
-(draft in `../paper/`). Code in `../vla-assure/`; the Kaggle notebooks that produced every folder below are in
+Results behind the paper *Calibrated Until Changed: Keeping Robot Failure Monitors Reliable After Model Compression*.
+Code in `../vla-assure/`; the Kaggle notebooks that produced every folder below are in
 `../vla-assure/notebooks/` (built by the scripts in `notebooks/builders/`).
 
-`summary_smolvla.csv` is the main table: one row per model change x monitor placement x monitor, rebuilt from the
+`summary_smolvla.csv` and `summary_pi05.csv` are the main tables: one row per model change x monitor placement x monitor, rebuilt from the
 files here with `python experiments/summarize.py`.
 
 ## Common setup
