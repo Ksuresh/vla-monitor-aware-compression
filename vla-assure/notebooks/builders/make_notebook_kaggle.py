@@ -7,10 +7,12 @@ Differences from the Colab version:
   - a wall-clock guard stops cleanly before Kaggle's 12 h limit, so the output is saved and the next run resumes
     from it (attach the previous version's output as input).
 """
+import pathlib
+NB = pathlib.Path(__file__).resolve().parents[1]   # vla-assure/notebooks: builders read and write notebooks here
 import json
 import runpy
 
-ns = runpy.run_path("/home/claude/make_notebook.py")
+ns = runpy.run_path(str(NB / "builders" / "make_notebook.py"))
 C = ns["cells"]
 assert len(C) == 24, len(C)
 
@@ -311,5 +313,5 @@ nb = {"cells": C, "metadata": {"kernelspec": {"display_name": "Python 3", "langu
                                "language_info": {"name": "python"},
                                "kaggle": {"accelerator": "nvidiaTeslaT4", "isInternetEnabled": True, "isGpuEnabled": True}},
       "nbformat": 4, "nbformat_minor": 4}
-json.dump(nb, open("/home/claude/VLA_gonogo_kaggle.ipynb", "w"), indent=1)
+json.dump(nb, open(NB / "VLA_gonogo_kaggle.ipynb", "w"), indent=1)
 print("kaggle cells:", len(C))

@@ -1,12 +1,14 @@
 """Builds VLA_pi05_full.ipynb: the second-model experiment (pi0.5) on Kaggle 2xT4, in commits of < 11 h.
 PART 1: pick a condition with 55-88 % fp16 success, then the 400 pre-registered reference episodes.
-PART 2: W4 and W8 on the action expert.   PART 3: W4 on language model + expert, and the second checkpoint.
-PART 4 (optional): 5 denoising steps and 5 actions per call.
+PART 2: W4 on the action expert.   PART 3: W4 on language model + expert.   PART 4: W8 on the action expert.
+Variants run on the 140 paired test slots only; recalibration is evaluated by cross-fitting (no repair pools).
 Each part after 1 needs the previous part's output attached (it resumes from it). Both GPUs run in parallel."""
+import pathlib
+NB = pathlib.Path(__file__).resolve().parents[1]   # vla-assure/notebooks: builders read and write notebooks here
 import json
 
-base = json.load(open("/home/claude/VLA_gonogo_kaggle.ipynb"))["cells"]
-pil = json.load(open("/home/claude/VLA_pi05_pilot.ipynb"))["cells"]
+base = json.load(open(NB / "VLA_gonogo_kaggle.ipynb"))["cells"]
+pil = json.load(open(NB / "VLA_pi05_pilot.ipynb"))["cells"]
 md = lambda s: {"cell_type": "markdown", "metadata": {}, "source": s.strip("\n")}  # noqa: E731
 code = lambda s: {"cell_type": "code", "metadata": {}, "execution_count": None, "outputs": [], "source": s.strip("\n")}  # noqa: E731
 
@@ -15,9 +17,9 @@ C = [md(r"""
 | PART | Runs | Approx. time | Inputs besides vla-assure |
 |---|---|---|---|
 | 1 | condition check (4 x 50 episodes at most) + 400 reference episodes | ~6-8 h | none |
-| 2 | W4 and W8 on the action expert (140 test + 80 repair slots each) | ~6-8 h | output of PART 1 |
-| 3 | W4 on language model + expert, and the second checkpoint | ~6-8 h | output of PART 2 |
-| 4 | optional: 5 denoising steps, 5 actions per call | ~6-8 h | output of PART 3 |
+| 2 | W4 on the action expert (140 paired test slots) | ~9.5 h | output of PART 1 |
+| 3 | W4 on language model + expert (140 paired test slots) | ~9.5 h | output of PART 2 |
+| 4 | W8 on the action expert (140 paired test slots) | ~9.5 h | output of PART 3 |
 
 **Setup (every part):** GPU T4 x2, Internet On, secret `HF_TOKEN` switched on, Add Input: dataset **vla-assure** (latest)
 and, from PART 2 on, **Notebook Output** of the previous version of THIS notebook. Set `PART` in cell 2a, then
@@ -86,30 +88,30 @@ print("parallel collect ready on", NGPU, "GPU(s)")
 '''))
 C.append(md("## 2. Runs"))
 C.append(code(r'''
-# 2a. Which part this commit runs
+# 2a. Which part this commit runs. Runs behind the paper (notebook49b3154248 on Kaggle):
+#     PART 1 = versions 3-4 (reference), PART 2 = version 6 (w4), PART 3 = version 8 (w4_lm), PART 4 = version 9 (w8)
 PART = 1
-VARIANTS = {1: [], 2: ["w4", "w8"], 3: ["w4_lm", "update"], 4: ["cfg_denoise5", "cfg_steps5"]}[PART]
+VARIANTS = {1: [], 2: ["w4"], 3: ["w4_lm"], 4: ["w8"]}[PART]
 print("PART", PART, "| variants:", VARIANTS)
 '''))
 C.append(code(r'''
 # 2b. Condition: the monitor needs failures and the paired analysis needs successes -> target 55-88 % fp16 success.
-#     pi0.5 succeeds on 100 % of nominal LIBERO-Spatial (pilot), so candidates are checked in order with 5 episodes
-#     per task (outside the slot partition) and the first in range is used; otherwise the one closest to 72 %.
-#     The choice is saved, so later parts reuse it.
+#     pi0.5 succeeds on 100 % of nominal LIBERO-Spatial and 98 % with the strong camera shift (checked), so the
+#     harder settings are checked first (5 episodes per task, outside the slot partition); the first in range is
+#     used, otherwise the one closest to 72 %. The choice is saved, so later parts reuse it.
 cf = WORK / "pi05_condition.json"
 if cf.exists():
     SUITE, CONDITION = json.loads(cf.read_text())["choice"]
 else:
     assert PART == 1, "condition not found: attach the output of the previous part"
-    tried = {}
-    for suite, cond in (("libero_spatial", "shift_strong"), ("libero_spatial", "shift_mild"),
-                        ("libero_10", "nominal"), ("libero_spatial", "action_noise")):
+    tried = {("libero_spatial", "shift_strong"): 0.98}          # measured in the cancelled run
+    for suite, cond in (("libero_10", "nominal"), ("libero_spatial", "action_noise"), ("libero_10", "shift_strong")):
         out = WORK / f"cond_pilot/{suite}_{cond}"
         collect(["--model", MODEL, "--variant", "fp16", "--suite", suite, "--condition", cond, "--episodes", "5",
                  "--out", str(out)], tail=400)
         rj = json.loads(next(out.rglob("run.json")).read_text())
         tried[(suite, cond)] = rj["success_rate"]
-        print(f"  {suite} + {cond}: fp16 success {rj['success_rate']:.2f} | {rj['seconds'] / rj['episodes']:.0f} s/episode")
+        print(f"  {suite} + {cond}: fp16 success {rj['success_rate']:.2f}", flush=True)
         if 0.55 <= rj["success_rate"] <= 0.88:
             break
     SUITE, CONDITION = min(tried, key=lambda k: abs(tried[k] - 0.72))
@@ -128,30 +130,55 @@ print(f"reference episodes on disk: {n_ref} | fp16 success {rj['success_rate']:.
 assert n_ref >= 10 * R_REF, "reference incomplete: attach the previous output and run PART 1 again"
 '''))
 C.append(code(r'''
-# 2d. Variants on the paired test slots + their own calibration pool (repair slots, top-ups to 44 successes)
+# 2c'. Check that the reference episodes stored the monitor features (stops early if not)
+import numpy as np
+eps = sorted((CODE / f"rollouts/{MODEL}/fp16/{KEY}").glob("t*.npz"))
+z = np.load(eps[0])
+feats = {k: z[k].shape for k in z.files if k.startswith("feat__")}
+print("episodes:", len(eps), "| features in first episode:", feats)
+assert "feat__vlm_last" in feats and "feat__expert_last" in feats, "features missing: send me this output"
+'''))
+C.append(code(r'''
+# 2d. Variants on the 140 paired test slots only (pi0.5 is slow on LIBERO-10; recalibration uses cross-fitting)
 for v in VARIANTS:
     print("=" * 30, v, flush=True)
     collect(["--model", MODEL, "--variant", v, "--suite", SUITE, "--condition", CONDITION, "--episodes", str(R_REF),
-             "--roles", "test,repair", "--target_successes", "44", "--max_extra_rounds", "4"], tail=600)
+             "--roles", "test"], tail=600)
     rj = json.loads((CODE / f"rollouts/{MODEL}/{v}/{KEY}/run.json").read_text())
     print(f"{v}: success {rj['success_rate']:.3f} | sampler {rj.get('sampler')}")
 '''))
 C.append(code(r'''
-# 2e. Score every variant run so far (CPU part): 5 monitor families x 3 placements + 20 re-splits + release options
-import pandas as pd, numpy as np
+# 2e. Score this part's variants (CPU part): 5 monitor families x 3 placements + 20 re-splits + release options.
+#     Time-guarded: a placement is scored only if it can finish before Kaggle's 12 h limit; the zip is always written.
+import pandas as pd, numpy as np, traceback
 done = sorted(p.name for p in (CODE / f"rollouts/{MODEL}").iterdir() if p.name != "fp16" and (p / KEY / "run.json").exists())
 print("variants on disk:", done)
+score = [v for v in done if v in VARIANTS] or done
+print("scoring now:", score, "| hours left in budget:", round(hours_left(), 2))
 files = [cf, CODE / f"rollouts/{MODEL}/fp16/{KEY}/run.json"]
-if done:
-    for name, taps in (("both_layers", "vlm_last,expert_last"), ("expert_only", "expert_last"), ("vlm_only", "vlm_last")):
+for name, taps in (("vlm_only", "vlm_last"), ("expert_only", "expert_last"), ("both_layers", "vlm_last,expert_last")):
+    if not score:
+        break
+    if hours_left() < 0.9:
+        print(f"SKIPPED {name}: not enough time left (score it in the next run)")
+        continue
+    try:
         run(["scripts/03_evaluate.py", "--model", MODEL, "--key", KEY,
              "--monitors", "mahalanobis,rnd,safe_mlp,acc,ext_mahalanobis", "--taps", taps], tail=400)
         dst = WORK / f"pi05_trials_{name}.csv"; shutil.copy(CODE / f"results/eval_trials/{MODEL}__{KEY}.csv", dst); files.append(dst)
-        run(["scripts/resplit.py", "--model", MODEL, "--key", KEY, "--taps", taps, "--variants", ",".join(done),
+    except Exception:
+        print("evaluate failed for", name); traceback.print_exc()
+    if hours_left() < 0.6:
+        print(f"SKIPPED resplit for {name}: not enough time left")
+        continue
+    try:
+        run(["scripts/resplit.py", "--model", MODEL, "--key", KEY, "--taps", taps, "--variants", ",".join(score),
              "--splits", "20", "--out", str(WORK / f"pi05_resplit_{name}.json")], tail=6000)
         files.append(WORK / f"pi05_resplit_{name}.json")
-    for v in done:
-        files.append(CODE / f"rollouts/{MODEL}/{v}/{KEY}/run.json")
+    except Exception:
+        print("resplit failed for", name); traceback.print_exc()
+for v in done:
+    files.append(CODE / f"rollouts/{MODEL}/{v}/{KEY}/run.json")
 with zipfile.ZipFile(f"/kaggle/working/pi05_part{PART}.zip", "w") as z:
     for p in files:
         p = pathlib.Path(p)
@@ -164,5 +191,5 @@ nb = {"cells": C, "metadata": {"kernelspec": {"display_name": "Python 3", "langu
                                "language_info": {"name": "python"},
                                "kaggle": {"accelerator": "nvidiaTeslaT4", "isInternetEnabled": True, "isGpuEnabled": True}},
       "nbformat": 4, "nbformat_minor": 4}
-json.dump(nb, open("/home/claude/VLA_pi05_full.ipynb", "w"), indent=1)
+json.dump(nb, open(NB / "VLA_pi05_full.ipynb", "w"), indent=1)
 print("cells", len(C))

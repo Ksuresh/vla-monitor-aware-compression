@@ -1,4 +1,6 @@
 """Builds VLA_gonogo.ipynb: the go/no-go experiment for monitor-aware compression (SmolVLA, LIBERO-Spatial, T4)."""
+import pathlib
+NB = pathlib.Path(__file__).resolve().parents[1]   # vla-assure/notebooks: builders read and write notebooks here
 import json
 
 cells = []
@@ -376,5 +378,5 @@ nb = {"cells": cells, "metadata": {"accelerator": "GPU", "colab": {"gpuType": "T
                                    "kernelspec": {"display_name": "Python 3", "name": "python3"},
                                    "language_info": {"name": "python"}},
       "nbformat": 4, "nbformat_minor": 0}
-json.dump(nb, open("/home/claude/VLA_gonogo.ipynb", "w"), indent=1)
+json.dump(nb, open(NB / "VLA_gonogo.ipynb", "w"), indent=1)
 print("cells:", len(cells))
