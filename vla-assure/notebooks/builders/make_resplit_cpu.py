@@ -11,20 +11,33 @@ code = lambda s: cells.append({"cell_type": "code", "metadata": {}, "execution_c
 
 md("""
 # All SmolVLA results in one pass (CPU only): primary table, re-splits, release options incl. recalibration on all successes
-CPU only (Accelerator = **None**), about 1-2 h. Inputs: the latest `vla-assure` dataset, dataset `gonogo-v5`, and the outputs of the four stage-2 versions (Add Input -> Notebook Output); not the go/no-go
+CPU only (Accelerator = **None**, Internet **On**), about 1-2 h. Inputs: the latest `vla-assure` dataset, dataset `gonogo-v5`, and the outputs of the four stage-2 versions (Add Input -> Notebook Output); not the go/no-go
 notebook (Version 8). No robot is run: this re-scores the saved episodes with 3 monitors x 3 placements.
+""")
+code(r"""
+# 0. Python packages the re-scoring needs (Kaggle's image normally has them; installs only what is missing)
+import importlib, subprocess, sys
+for mod, pkg in (("numpy", "numpy"), ("scipy", "scipy"), ("pandas", "pandas"), ("yaml", "pyyaml"), ("torch", "torch")):
+    try:
+        importlib.import_module(mod)
+    except ImportError:
+        extra = ["--index-url", "https://download.pytorch.org/whl/cpu"] if pkg == "torch" else []
+        subprocess.run([sys.executable, "-m", "pip", "install", "-q", pkg] + extra, check=True)
+import numpy, scipy, torch
+print("python", sys.version.split()[0], "| numpy", numpy.__version__, "| scipy", scipy.__version__, "| torch", torch.__version__)
 """)
 code(r"""
 # 1. Locate code and saved episodes
 import glob, os, pathlib, shutil, subprocess, sys
 CODE = pathlib.Path("/root/vla-assure")
 def newest(root):
-    f = pathlib.Path(root) / "scripts/shadow_check.py"
-    return f.exists() and "all_taps" in f.read_text() and (pathlib.Path(root) / "scripts/resplit.py").exists()
+    f, r = pathlib.Path(root) / "scripts/shadow_check.py", pathlib.Path(root) / "scripts/resplit.py"
+    return f.exists() and "all_taps" in f.read_text() and r.exists() and "recal_all" in r.read_text()
 trees = sorted({str(pathlib.Path(p).parents[3]) for p in
                 glob.glob("/kaggle/input/**/src/assure/adapters/lerobot_adapter.py", recursive=True)})
 trees = [t for t in trees if newest(t)]
-assert trees, "attach the vla-assure dataset (latest version)"
+assert trees, "attach the vla-assure dataset uploaded from the latest vla-assure.zip (needs recal_all in resplit.py)"
+print("code:", trees[0])
 shutil.rmtree(CODE, ignore_errors=True); shutil.copytree(trees[0], CODE, symlinks=False)
 # merge every attached output: gonogo-v5 (fp16, w4) + the four stage-2 versions (w4_lm, w8, cfg_denoise5, cfg_steps5, w4 repair)
 ROLL = pathlib.Path("/kaggle/working/roll")
@@ -39,6 +52,11 @@ for d in glob.glob("/kaggle/input/**/rollouts/smolvla/*/libero_spatial", recursi
     if (d / "run.json").exists() and (d.parent.name != "w4" or not (tgt / "run.json").exists()):
         shutil.copy(d / "run.json", tgt / "run.json")
 assert (ROLL / "smolvla/fp16/libero_spatial").exists(), "attach gonogo-v5 and the four stage-2 notebook outputs"
+for v in sorted(p.name for p in (ROLL / "smolvla").iterdir()):
+    print(f"  {v:14s} {len(list((ROLL / 'smolvla' / v / 'libero_spatial').glob('*.npz'))):4d} episodes")
+need = {"fp16": 400, "w4": 140, "w4_lm": 140, "w8": 140, "cfg_denoise5": 140, "cfg_steps5": 140}
+miss = [v for v, n in need.items() if len(list((ROLL / "smolvla" / v / "libero_spatial").glob("*.npz"))) < n]
+assert not miss, f"episodes missing for {miss}: attach gonogo-v5 and all four stage-2 notebook outputs"
 RES = pathlib.Path("/kaggle/working/results"); RES.mkdir(exist_ok=True)
 if (CODE / "results").exists() or (CODE / "results").is_symlink():
     (CODE / "results").unlink() if (CODE / "results").is_symlink() else shutil.rmtree(CODE / "results")

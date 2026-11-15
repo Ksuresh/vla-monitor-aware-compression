@@ -10,7 +10,6 @@ deployer tell and fix it before release?
 | `vla-assure/` | Experiment code: LeRobot/OpenVLA adapters, feature taps, fake quantization, monitors, functional conformal calibration, shadow replay, evaluation, release-option comparison (`scripts/resplit.py`), 38 CPU tests |
 | `vla-assure/notebooks/` | The Kaggle notebooks that produced every result (and `builders/`, the scripts that generate them) |
 | `experiments/` | All results: per-trial CSVs, re-split/release JSONs, run metadata, and `summary_smolvla.csv` (main table). See `experiments/README.md` |
-| `paper/` | Current manuscript draft (Word) |
 
 ## Status (November 2026)
 
