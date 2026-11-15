@@ -75,6 +75,19 @@ PART = 4). `vla-assure/notebooks/VLA_pi05_full.ipynb` (built by `builders/make_p
 only the header text and the default `PART` differ. To reproduce a part: set `PART` in cell 2a and commit on Kaggle
 2x T4 with the previous part's output attached.
 
+## Code provenance
+
+Checked on 15 Nov 2026 against the files actually used on Kaggle:
+- The four SmolVLA stage-2 result folders are byte-identical to the zips downloaded from the collaborator's Kaggle
+  versions, and `vla-assure/notebooks/VLA_stage2_variants.ipynb` has the same code cells as the notebook that ran.
+- The stage-2 runs used an earlier `vla-assure` dataset version (zip SHA-256 `8191232d...fbef22c0`). It differs from
+  this repo only by later, additive changes: `01_collect.py --max_per_task` for variants (pilots only, default off),
+  `resplit.py` options `recal_all` / `certify_or_recal_all` (new keys, existing outputs unchanged), and the
+  `dtype` switch in `lerobot_adapter.py` (applied only when `models.yaml` sets `dtype`, i.e. pi0.5). Re-running the
+  SmolVLA stage-2 notebooks with this repo uses the same settings, slots and seeds, and adds the two extra release
+  options to the re-split output (GPU arithmetic may still differ slightly between machines).
+- The pi0.5 runs used exactly the code in this repo.
+
 ## Where the raw episodes are
 
 Episode files (`*.npz`: actions, success, monitor features per query) are too large for git. They live in Kaggle:
