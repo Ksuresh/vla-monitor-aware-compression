@@ -68,6 +68,11 @@ Headline (Mahalanobis, false alarms on all successes, fp16 -> changed policy; te
 
 Pending: W8 on the action expert (PART 4, Kaggle version 9).
 
+`pi05/kaggle_notebook49b3154248_as_run.ipynb` is the notebook exactly as it ran on Kaggle (downloaded 15 Nov 2026,
+PART = 4). `vla-assure/notebooks/VLA_pi05_full.ipynb` (built by `builders/make_pi05_full.py`) has identical code cells;
+only the header text and the default `PART` differ. To reproduce a part: set `PART` in cell 2a and commit on Kaggle
+2x T4 with the previous part's output attached.
+
 ## Where the raw episodes are
 
 Episode files (`*.npz`: actions, success, monitor features per query) are too large for git. They live in Kaggle:
