@@ -48,6 +48,13 @@ Headline (Mahalanobis, false alarms on all successes, fp16 -> changed policy):
 
 Under 5 actions per call only the output-level monitor (action-chunk consistency) moves: 0.00 -> 0.19 on joint successes.
 
+## Planned: real low-bit inference (SmolVLA)
+
+`vla-assure/notebooks/VLA_stage2_variants.ipynb` PART 5-7 run the expert (and optionally the language model + expert)
+with real bitsandbytes NF4 kernels (`real_nf4`, `real_nf4_lm` in `configs/experiment.yaml`; `apply_bnb` in
+`src/assure/variants.py`): weights stored in 4 bits and dequantized inside the kernel, unlike the simulated RTN
+variants above. Results will be added as `smolvla/stage2_part5/` etc.
+
 ## pi0.5 (`lerobot/pi05_libero_finetuned`, bfloat16), in progress
 
 | Folder | Contents |

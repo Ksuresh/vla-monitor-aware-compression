@@ -46,6 +46,11 @@ variants:
   w4_vision_fp:    {kind: quant, bits: 4, group_size: 128, exclude: ["vision", "siglip", "vision_tower"]}
   bnb8:            {kind: bnb, bits: 8}                # OpenVLA only: real bitsandbytes INT8 (true memory numbers)
   bnb4:            {kind: bnb, bits: 4}                # OpenVLA only: real bitsandbytes NF4
+  # LeRobot models, REAL low-bit inference on a T4 (bitsandbytes kernels; torchao int4 needs sm80+):
+  real_nf4:        {kind: bnb_real, bits: 4, quant_type: nf4, blocksize: 64}
+  real_int8:       {kind: bnb_real, bits: 8}
+  real_nf4_lm:     {kind: bnb_real, bits: 4, quant_type: nf4, blocksize: 64, own_scope: true,
+                    include: ["model.vlm_with_expert.vlm.model.text_model.*", "model.vlm_with_expert.lm_expert.*"]}
   tao8:            {kind: torchao, bits: 8}            # LeRobot models: real torchao int8 weight-only kernels
   tao4:            {kind: torchao, bits: 4, group_size: 128}  # LeRobot models: real torchao int4 (bf16, CUDA)
   update:          {kind: checkpoint_swap}             # uses models.yaml:update_checkpoint
