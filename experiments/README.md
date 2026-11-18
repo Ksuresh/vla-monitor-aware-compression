@@ -48,6 +48,20 @@ Headline (Mahalanobis, false alarms on all successes, fp16 -> changed policy):
 
 Under 5 actions per call only the output-level monitor (action-chunk consistency) moves: 0.00 -> 0.19 on joint successes.
 
+## SmolVLA CPU re-scoring (`smolvla/cpu_all/`)
+
+`vla-assure/notebooks/VLA_resplit_cpu.ipynb`, run on Kaggle CPU (18 Nov 2026) with the four stage-2 outputs and
+`gonogo-v5` attached: all SmolVLA changes re-scored in one pass (`resplit_<placement>.json`), adding the release
+options `recal_all` / `certify_or_recal_all` (recalibration on every success in the repair pool, 46-53 per change;
+W4-LM has 24). `python experiments/cpu_all_summary.py` prints the two summaries below.
+
+- Reproducibility against the GPU stage-2 runs: Mahalanobis identical in all 15 cells; RND within 0.042 (fixed
+  split) and 0.028 (re-split median); the SAFE-style probe within 0.137 and 0.083. The probe and RND are trained
+  networks whose weights are not bit-identical across hardware and library versions.
+- Recalibration on all pool successes (Mahalanobis, 12 feasible cells): in marginal mode the held-out false-alarm
+  rate falls from 0.082 to 0.044 and the detection lost on valid monitors from 0.061 (max 0.31) to 0.024 (max 0.09);
+  in PAC mode there is no gain, because the PAC rank stays at the maximum until 76 successes.
+
 ## Planned: real low-bit inference (SmolVLA)
 
 `vla-assure/notebooks/VLA_stage2_variants.ipynb` PART 5-7 run the expert (and optionally the language model + expert)
