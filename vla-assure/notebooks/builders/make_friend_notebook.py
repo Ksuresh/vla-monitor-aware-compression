@@ -21,10 +21,14 @@ paired test slots, then re-scores every saved run with 5 monitor families x 3 pl
 | 2 | **W8 on the expert**, test + repair slots | ~5 h |
 | 3 | **5 denoising steps** (runtime-config shift, same weights), test + repair slots | ~4 h |
 | 4 | **5 actions per call** (runtime-config shift) + W4 calibration pool (repair slots) | ~7 h |
+| 5 | **Real 4-bit inference** of the expert (bitsandbytes NF4 kernels), test + repair slots | ~7-9 h |
+| 6 | Shadow replay of the real NF4 expert on repair slots (fp16 robot's frames) | ~2-3 h |
+| 7 | (optional) **Real NF4 on the VLM language model + expert**, test + repair slots | ~9-11 h |
 
 **Setup (once):** Settings -> Accelerator **GPU T4 x2**, Internet **On**. Add Input: dataset **vla-assure** (latest),
 dataset **gonogo-v5**. Then set `PART = 1` in cell 2a, **Save Version -> Save & Run All (Commit)**.
 **Then:** `PART = 2`, `3`, `4`, one commit each (no need to attach earlier outputs).
+Parts 5-7 need the newest `vla-assure` dataset version (with `apply_bnb`); they install `bitsandbytes` themselves.
 **Send back:** `stage2_partN.zip` from each version's Output tab.
 """))
 C += [base[1], base[2]]
@@ -77,7 +81,12 @@ C.append(md("## 2. Stage-2 runs"))
 C.append(code(r'''
 # 2a. Which part this commit runs (1, 2, 3, then 4)
 PART = 1
-VARIANTS = {1: ["w4_lm"], 2: ["w8"], 3: ["cfg_denoise5"], 4: ["cfg_steps5", "w4"]}[PART]
+VARIANTS = {1: ["w4_lm"], 2: ["w8"], 3: ["cfg_denoise5"], 4: ["cfg_steps5", "w4"],
+            5: ["real_nf4"], 6: [], 7: ["real_nf4_lm"]}[PART]
+if PART >= 5:   # real low-bit kernels: bitsandbytes runs on a T4 (torchao int4 needs an A100-class GPU)
+    assert "def apply_bnb" in (CODE / "src/assure/variants.py").read_text(), "upload the newest vla-assure.zip (with apply_bnb)"
+    subprocess.run([sys.executable, "-m", "pip", "install", "-q", "bitsandbytes>=0.45"], check=True)
+    import bitsandbytes as bnb; print("bitsandbytes", bnb.__version__)
 # test slots = paired endpoint; repair slots + top-ups (until 44 successes) = the changed policy's OWN calibration
 # pool, disjoint from test, so recalibration (19 marginal / 44 PAC) is judged on independent episodes.
 ROLES = {"w4": "repair"}   # w4 test slots already exist from the go/no-go; only its calibration pool is new
@@ -93,13 +102,15 @@ if "w4" in VARIANTS:
 C.append(code(r'''
 # 2b. Shadow replay on identical frames (PART 1 only; ~1.5-2 h): W4-LM, W8 and 5 denoising steps see the fp16 robot's frames.
 #     Runs on REPAIR slots, disjoint from the closed-loop test slots, so the prediction is judged out of sample.
-if PART == 1:
-    collect(["--model", MODEL, "--variant", "fp16", "--shadow", "w4_lm,w8,cfg_denoise5", "--suite", SUITE,
+SHADOW = {1: ("w4_lm,w8,cfg_denoise5", "shadow2"), 6: ("real_nf4", "shadow6")}
+if PART in SHADOW:
+    names, tag = SHADOW[PART]
+    collect(["--model", MODEL, "--variant", "fp16", "--shadow", names, "--suite", SUITE,
              "--condition", CONDITION, "--episodes", str(R_REF), "--ref_roles", "repair", "--max_per_task", "3",
-             "--out", str(WORK / "rollouts_shadow2")])
+             "--out", str(WORK / f"rollouts_{tag}")])
     for taps in ("vlm_last,expert_last", "expert_last", "vlm_last"):
-        run(["scripts/shadow_check.py", "--model", MODEL, "--key", KEY, "--shadow_root", str(WORK / "rollouts_shadow2"),
-             "--taps", taps, "--out", str(WORK / f"shadow2_{taps.replace(',', '+')}.json")], tail=1800)
+        run(["scripts/shadow_check.py", "--model", MODEL, "--key", KEY, "--shadow_root", str(WORK / f"rollouts_{tag}"),
+             "--taps", taps, "--out", str(WORK / f"{tag}_{taps.replace(',', '+')}.json")], tail=1800)
 '''))
 C.append(code(r'''
 # 2c. Closed-loop variants on the 140 paired test slots (resumable)
@@ -115,34 +126,42 @@ C.append(code(r'''
 # 2d. Re-score every saved run with 5 monitor families x 3 placements (CPU part, ~30-60 min)
 import pandas as pd, numpy as np
 OUT = {}
-for name, taps in (("both_layers", "vlm_last,expert_last"), ("expert_only", "expert_last"), ("vlm_only", "vlm_last")):
-    print("scoring", name, flush=True)
-    run(["scripts/03_evaluate.py", "--model", MODEL, "--key", KEY,
-         "--monitors", "mahalanobis,rnd,safe_mlp,acc,ext_mahalanobis", "--taps", taps], tail=400)
-    OUT[name] = WORK / f"trials_part{PART}_{name}.csv"
-    shutil.copy(CODE / f"results/eval_trials/{MODEL}__{KEY}.csv", OUT[name])
-for name, taps in (("both_layers", "vlm_last,expert_last"), ("expert_only", "expert_last"), ("vlm_only", "vlm_last")):
-    run(["scripts/resplit.py", "--model", MODEL, "--key", KEY, "--taps", taps, "--variants", ",".join(VARIANTS),
-         "--splits", "20", "--out", str(WORK / f"resplit_part{PART}_{name}.json")], tail=3000)
-rows = []
-for name, path in OUT.items():
-    t = pd.read_csv(path); t = t[(t.alpha.round(3) == 0.10) & (t.ref_success >= 0) & t.variant.isin(VARIANTS)]
-    for (mon, v), d in t.groupby(["monitor", "variant"]):
-        js = d[(d.ref_success == 1) & (d.var_success == 1)]
-        nf = d[(d.ref_success == 1) & (d.var_success == 0)]
-        rows.append(dict(features=name, monitor=mon, variant=v, success_fp16=d.ref_success.mean(),
-                         success_var=d.var_success.mean(), joint_succ=len(js), FPR_fp16=js.ref_alarm.mean(),
-                         FPR_var=js.var_alarm.mean(), n_new_failures=len(nf),
-                         detect_NEW_failures=nf.var_alarm.mean() if len(nf) else np.nan))
-res = pd.DataFrame(rows).round(3)
-pd.set_option("display.width", 250); print(res.to_string(index=False))
-res.to_csv(WORK / f"groups_part{PART}.csv", index=False)
-with zipfile.ZipFile(f"/kaggle/working/stage2_part{PART}.zip", "w") as z:
-    for p in list(OUT.values()) + [WORK / f"groups_part{PART}.csv"] + list(WORK.glob("shadow2_*.json")) + list(WORK.glob(f"resplit_part{PART}_*.json")):
-        z.write(p, p.name)
-    for v in VARIANTS:
-        z.write(CODE / f"rollouts/{MODEL}/{v}/{KEY}/run.json", f"run_{v}.json")
-print(f"Send me /kaggle/working/stage2_part{PART}.zip (Output tab)")
+if not VARIANTS:   # PART 6 is shadow replay only: package and stop
+    with zipfile.ZipFile(f"/kaggle/working/stage2_part{PART}.zip", "w") as z:
+        for p in WORK.glob("shadow6_*.json"):
+            z.write(p, p.name)
+        for f in (WORK / "rollouts_shadow6").rglob("run.json"):
+            z.write(f, "run_shadow6.json")
+    print(f"Send me /kaggle/working/stage2_part{PART}.zip (Output tab)")
+else:
+    for name, taps in (("both_layers", "vlm_last,expert_last"), ("expert_only", "expert_last"), ("vlm_only", "vlm_last")):
+        print("scoring", name, flush=True)
+        run(["scripts/03_evaluate.py", "--model", MODEL, "--key", KEY,
+             "--monitors", "mahalanobis,rnd,safe_mlp,acc,ext_mahalanobis", "--taps", taps], tail=400)
+        OUT[name] = WORK / f"trials_part{PART}_{name}.csv"
+        shutil.copy(CODE / f"results/eval_trials/{MODEL}__{KEY}.csv", OUT[name])
+    for name, taps in (("both_layers", "vlm_last,expert_last"), ("expert_only", "expert_last"), ("vlm_only", "vlm_last")):
+        run(["scripts/resplit.py", "--model", MODEL, "--key", KEY, "--taps", taps, "--variants", ",".join(VARIANTS),
+             "--splits", "20", "--out", str(WORK / f"resplit_part{PART}_{name}.json")], tail=3000)
+    rows = []
+    for name, path in OUT.items():
+        t = pd.read_csv(path); t = t[(t.alpha.round(3) == 0.10) & (t.ref_success >= 0) & t.variant.isin(VARIANTS)]
+        for (mon, v), d in t.groupby(["monitor", "variant"]):
+            js = d[(d.ref_success == 1) & (d.var_success == 1)]
+            nf = d[(d.ref_success == 1) & (d.var_success == 0)]
+            rows.append(dict(features=name, monitor=mon, variant=v, success_fp16=d.ref_success.mean(),
+                             success_var=d.var_success.mean(), joint_succ=len(js), FPR_fp16=js.ref_alarm.mean(),
+                             FPR_var=js.var_alarm.mean(), n_new_failures=len(nf),
+                             detect_NEW_failures=nf.var_alarm.mean() if len(nf) else np.nan))
+    res = pd.DataFrame(rows).round(3)
+    pd.set_option("display.width", 250); print(res.to_string(index=False))
+    res.to_csv(WORK / f"groups_part{PART}.csv", index=False)
+    with zipfile.ZipFile(f"/kaggle/working/stage2_part{PART}.zip", "w") as z:
+        for p in list(OUT.values()) + [WORK / f"groups_part{PART}.csv"] + list(WORK.glob("shadow[0-9]_*.json")) + list(WORK.glob(f"resplit_part{PART}_*.json")):
+            z.write(p, p.name)
+        for v in VARIANTS:
+            z.write(CODE / f"rollouts/{MODEL}/{v}/{KEY}/run.json", f"run_{v}.json")
+    print(f"Send me /kaggle/working/stage2_part{PART}.zip (Output tab)")
 '''))
 
 nb = {"cells": C, "metadata": {"kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},

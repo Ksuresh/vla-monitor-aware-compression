@@ -48,7 +48,7 @@ def resolve(name: str, exp: dict) -> dict:
 
     def scoped(spec):
         # a variant with its own "include" (e.g. whole-model or VLM+expert) ignores the go/no-go scope
-        if spec.get("kind") in ("quant", "torchao") and scope and not spec.get("own_scope"):
+        if spec.get("kind") in ("quant", "torchao", "bnb_real") and scope and not spec.get("own_scope"):
             spec = {**spec, **{k: scope[k] for k in ("include", "block_regex") if k in scope}}
         return spec
     if name in exp["variants"]:
@@ -231,9 +231,62 @@ def apply_torchao(policy: nn.Module, bits: int, group_size: int = 128, protect: 
             "protected_blocks": protect}
 
 
+def apply_bnb(policy: nn.Module, bits: int, include: list[str] | None = None, quant_type: str = "nf4",
+              blocksize: int = 64) -> dict:
+    """Real low-bit inference for LeRobot policies with bitsandbytes kernels (run on a T4, unlike torchao int4).
+
+    Every nn.Linear inside `include` is replaced by bnb.nn.Linear4bit (NF4/FP4, absmax per block of
+    `blocksize` weights, weights STORED in 4 bits and dequantized on the fly inside the kernel) or by
+    bnb.nn.Linear8bitLt (LLM.int8 with outlier decomposition, threshold 6.0). Unlike apply_fake_quant this
+    changes the stored weights, the arithmetic path and the memory footprint; it is a different quantizer
+    from our symmetric RTN, so it tests whether the findings carry over to a deployed low-bit format.
+    Must run before the policy is wrapped or hooked; the modules are replaced in their parent."""
+    import bitsandbytes as bnb
+    n_rep, p_rep, p_tot, bytes_before, bytes_after = 0, 0, 0, 0, 0
+    for parent_name, parent in list(policy.named_modules()):
+        for cname, child in list(parent.named_children()):
+            full = f"{parent_name}.{cname}" if parent_name else cname
+            if not isinstance(child, nn.Linear):
+                continue
+            p_tot += child.weight.numel()
+            if not _in_scope(full, include):
+                continue
+            dev, dt = child.weight.device, child.weight.dtype
+            has_bias = child.bias is not None
+            w = child.weight.data.detach().to("cpu")
+            bytes_before += w.numel() * w.element_size()
+            if bits == 4:
+                new = bnb.nn.Linear4bit(child.in_features, child.out_features, bias=has_bias, compute_dtype=dt,
+                                        quant_type=quant_type, quant_storage=torch.uint8)
+                new.weight = bnb.nn.Params4bit(w, requires_grad=False, quant_type=quant_type, blocksize=blocksize)
+            elif bits == 8:
+                new = bnb.nn.Linear8bitLt(child.in_features, child.out_features, bias=has_bias,
+                                          has_fp16_weights=False, threshold=6.0)
+                new.weight = bnb.nn.Int8Params(w.to(torch.float16), requires_grad=False, has_fp16_weights=False)
+            else:
+                raise ValueError(f"bitsandbytes supports 4 or 8 bits, got {bits}")
+            if has_bias:
+                new.bias = nn.Parameter(child.bias.data.detach().to(dt), requires_grad=False)
+            new = new.to(dev)          # quantization happens on the move to CUDA
+            setattr(parent, cname, new)
+            n_rep += 1
+            p_rep += w.numel()
+            bytes_after += new.weight.data.numel() * new.weight.data.element_size()
+    if n_rep == 0:
+        raise RuntimeError("apply_bnb replaced no Linear layer: check the quantization scope")
+    return {"kind": "bnb_real", "bits": bits, "quant_type": quant_type if bits == 4 else "llm.int8",
+            "blocksize": blocksize if bits == 4 else None, "real_kernels": True, "linear_replaced": n_rep,
+            "param_fraction_quantized": round(p_rep / max(p_tot, 1), 4),
+            "scoped_linear_weight_bytes_before": int(bytes_before), "scoped_linear_weight_bytes_after": int(bytes_after),
+            "quant_scope": include or ["*"]}
+
+
 def apply_variant(policy: nn.Module, model_name: str, variant: dict) -> dict:
     """Mutates `policy` in place for quant variants; returns a report dict for the run log."""
     kind = variant.get("kind", "reference")
+    if kind == "bnb_real":
+        return apply_bnb(policy, int(variant["bits"]), variant.get("include"), str(variant.get("quant_type", "nf4")),
+                         int(variant.get("blocksize", 64)))
     if kind == "torchao":
         protect = []
         if variant.get("protect_rule"):
