@@ -1,6 +1,6 @@
 # Experiment results: Calibrated Until Changed
 
-Results behind the paper *Calibrated Until Changed: Keeping Robot Failure Monitors Reliable After Model Compression*.
+Results behind the paper *Calibrated Until Changed: Model Changes Silently Invalidate Robot Failure Monitors*.
 Code in `../vla-assure/`; the Kaggle notebooks that produced every folder below are in
 `../vla-assure/notebooks/` (built by the scripts in `notebooks/builders/`).
 
@@ -12,7 +12,7 @@ files here with `python experiments/summarize.py`.
 | Item | Value |
 |---|---|
 | Benchmark | LIBERO, Kaggle 2x T4, MuJoCo EGL rendering, LeRobot 0.6.1 |
-| Design | Pre-registered slot partition per task (seed fixed before any rollout): 25 % train, 20 % calib, 20 % repair, 35 % test; variants run the same test slots (paired) |
+| Design | One seeded random partition of all slots, pooled over tasks (seed fixed before any rollout; not registered with a third party): 25 % train, 20 % calib, 20 % repair, 35 % test; variants run the same test slots (paired). SmolVLA W4 (go/no-go) is exploratory; the primary measure was set after it |
 | Alarm | Functional conformal band (SAFE-style), alpha = 0.10, shape/threshold split max(10, ceil(N/2)) |
 | Monitors | Mahalanobis, RND, SAFE-style MLP probe, at three placements (VL-only `vlm_last`, expert-only `expert_last`, both); controls: action-chunk consistency (`acc`), pixel Mahalanobis (`ext_mahalanobis`) |
 | Primary metric | Inherited monitor's false-alarm rate on all successes of each policy, exact 95 % Clopper-Pearson interval |
@@ -25,7 +25,7 @@ R = 40 slots per task (400 reference episodes, 140 paired test slots); fp16 test
 
 | Folder | Contents |
 |---|---|
-| `smolvla/gonogo/` | Go/no-go run: fp16 reference, W4 on the action expert, two 15 % mixed-precision protection rules; block sensitivity (`sensitivity.json`), per-trial alarms for both-layer Mahalanobis (`eval_trials.csv`) |
+| `smolvla/gonogo/` | Exploratory go/no-go run: fp16 reference, W4 on the action expert, two 15 % mixed-precision protection rules (analysed only with the go/no-go's joint-success readout); block sensitivity (`sensitivity.json`), per-trial alarms for both-layer Mahalanobis (`eval_trials.csv`), W4 shadow replay on 32 test-slot episodes (`shadow_check.json`) |
 | `smolvla/stage2_part1/` | W4 on language model + expert (`w4_lm`); shadow replay of `w4_lm`, `w8`, `cfg_denoise5` on repair slots (`shadow2_*.json`) |
 | `smolvla/stage2_part2/` | W8 on the action expert, test + repair slots |
 | `smolvla/stage2_part3/` | 5 denoising steps (`cfg_denoise5`, same weights) |
