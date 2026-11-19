@@ -92,8 +92,12 @@ if PART == 8:
     assert "seed_offset" in (CODE / "scripts/01_collect.py").read_text(), "upload the newest vla-assure.zip (with seed_offset)"
 if PART in (5, 6, 7):   # real low-bit kernels: bitsandbytes runs on a T4 (torchao int4 needs an A100-class GPU)
     assert "def apply_bnb" in (CODE / "src/assure/variants.py").read_text(), "upload the newest vla-assure.zip (with apply_bnb)"
-    subprocess.run([sys.executable, "-m", "pip", "install", "-q", "bitsandbytes>=0.45"], check=True)
-    import bitsandbytes as bnb; print("bitsandbytes", bnb.__version__)
+    # the policy runs in the Python 3.12 environment PY (cell 1c), so bitsandbytes goes there, not into the notebook kernel
+    subprocess.run([PY, "-m", "pip", "install", "-q", "bitsandbytes>=0.45"], check=True)
+    out = subprocess.run([PY, "-c", "import bitsandbytes as b, torch; print('bitsandbytes', b.__version__, '| torch', torch.__version__)"],
+                         capture_output=True, text=True)
+    print(out.stdout.strip() or out.stderr[-2000:])
+    assert out.returncode == 0, "bitsandbytes did not import in the policy environment"
 # test slots = paired endpoint; repair slots + top-ups (until 44 successes) = the changed policy's OWN calibration
 # pool, disjoint from test, so recalibration (19 marginal / 44 PAC) is judged on independent episodes.
 ROLES = {"w4": "repair", "fp16_reseed": "test"}   # the null control needs only the paired test slots   # w4 test slots already exist from the go/no-go; only its calibration pool is new
