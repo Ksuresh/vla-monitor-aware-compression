@@ -24,6 +24,7 @@ paired test slots, then re-scores every saved run with 5 monitor families x 3 pl
 | 5 | **Real 4-bit inference** of the expert (bitsandbytes NF4 kernels), test + repair slots | ~7-9 h |
 | 6 | Shadow replay of the real NF4 expert on repair slots (fp16 robot's frames) | ~2-3 h |
 | 7 | (optional) **Real NF4 on the VLM language model + expert**, test + repair slots | ~9-11 h |
+| 8 | **Null-change control**: fp16 again on the 140 test slots with different random draws (same weights, tasks, initial states) | ~3-4 h |
 
 **Setup (once):** Settings -> Accelerator **GPU T4 x2**, Internet **On**. Add Input: dataset **vla-assure** (latest),
 dataset **gonogo-v5**. Then set `PART = 1` in cell 2a, **Save Version -> Save & Run All (Commit)**.
@@ -82,14 +83,16 @@ C.append(code(r'''
 # 2a. Which part this commit runs (1, 2, 3, then 4)
 PART = 1
 VARIANTS = {1: ["w4_lm"], 2: ["w8"], 3: ["cfg_denoise5"], 4: ["cfg_steps5", "w4"],
-            5: ["real_nf4"], 6: [], 7: ["real_nf4_lm"]}[PART]
-if PART >= 5:   # real low-bit kernels: bitsandbytes runs on a T4 (torchao int4 needs an A100-class GPU)
+            5: ["real_nf4"], 6: [], 7: ["real_nf4_lm"], 8: ["fp16_reseed"]}[PART]
+if PART == 8:
+    assert "seed_offset" in (CODE / "scripts/01_collect.py").read_text(), "upload the newest vla-assure.zip (with seed_offset)"
+if PART in (5, 6, 7):   # real low-bit kernels: bitsandbytes runs on a T4 (torchao int4 needs an A100-class GPU)
     assert "def apply_bnb" in (CODE / "src/assure/variants.py").read_text(), "upload the newest vla-assure.zip (with apply_bnb)"
     subprocess.run([sys.executable, "-m", "pip", "install", "-q", "bitsandbytes>=0.45"], check=True)
     import bitsandbytes as bnb; print("bitsandbytes", bnb.__version__)
 # test slots = paired endpoint; repair slots + top-ups (until 44 successes) = the changed policy's OWN calibration
 # pool, disjoint from test, so recalibration (19 marginal / 44 PAC) is judged on independent episodes.
-ROLES = {"w4": "repair"}   # w4 test slots already exist from the go/no-go; only its calibration pool is new
+ROLES = {"w4": "repair", "fp16_reseed": "test"}   # the null control needs only the paired test slots   # w4 test slots already exist from the go/no-go; only its calibration pool is new
 ref = CODE / f"rollouts/{MODEL}/fp16/{KEY}"
 n_ref = len(list(ref.glob("*.npz")))
 print("PART", PART, "| variants:", VARIANTS, "| reference episodes on disk:", n_ref)
@@ -118,7 +121,7 @@ for v in VARIANTS:
     print("=" * 30, v)
     collect(["--model", MODEL, "--variant", v, "--suite", SUITE, "--condition", CONDITION,
              "--episodes", str(R_REF), "--roles", ROLES.get(v, "test,repair"),
-             "--target_successes", "44", "--max_extra_rounds", "4"], tail=600)
+             "--target_successes", "44", "--max_extra_rounds", "0" if ROLES.get(v) == "test" else "4"], tail=600)
     rj = json.loads((CODE / f"rollouts/{MODEL}/{v}/{KEY}/run.json").read_text())
     print(f"{v}: success {rj['success_rate']:.3f} | sampler {rj.get('sampler')}")
 '''))

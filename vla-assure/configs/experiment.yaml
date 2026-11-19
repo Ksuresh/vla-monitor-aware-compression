@@ -43,6 +43,9 @@ variants:
   cfg_steps5:      {kind: config, n_action_steps: 5}
   cfg_steps20:     {kind: config, n_action_steps: 20}
   cfg_denoise5:    {kind: config, num_steps: 5}
+  # null-change control: identical weights and settings, same task and initial state per slot, different random draws
+  # (policy noise and simulator seed). Sets the noise floor for outcome flips and monitor drift between paired runs.
+  fp16_reseed:     {kind: config, seed_offset: 100000}
   w4_vision_fp:    {kind: quant, bits: 4, group_size: 128, exclude: ["vision", "siglip", "vision_tower"]}
   bnb8:            {kind: bnb, bits: 8}                # OpenVLA only: real bitsandbytes INT8 (true memory numbers)
   bnb4:            {kind: bnb, bits: 4}                # OpenVLA only: real bitsandbytes NF4

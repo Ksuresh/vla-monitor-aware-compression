@@ -144,6 +144,16 @@ def compare_fixes(mon, cp, train, V, a, cpkw, seed, pool=None, folds=10, alpha_t
                                     for k, d in res.items()}}
     return report
 
+
+def time_align(e, r: int):
+    """Keep every r-th query of an episode (features, query steps, chunks), so query k is at the same environment
+    step as the reference's query k. Used only for runtime changes that query more often than the reference."""
+    from dataclasses import replace
+    sl = slice(None, None, r)
+    return replace(e, query_step=e.query_step[sl], feats={k: v[sl] for k, v in e.feats.items()},
+                   chunk=None if e.chunk is None else e.chunk[sl],
+                   chunk_alt=None if e.chunk_alt is None else e.chunk_alt[sl])
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", required=True)
@@ -155,6 +165,9 @@ def main():
     ap.add_argument("--alpha", type=float, default=0.10)
     ap.add_argument("--splits", type=int, default=20)
     ap.add_argument("--out", default=str(ROOT / "results/resplit.json"))
+    ap.add_argument("--time_align", action="store_true",
+                    help="for variants that query more often than fp16 (e.g. 5 vs 10 actions per call), keep every r-th "
+                         "query so the band is compared at the same environment steps as the reference")
     a = ap.parse_args()
     models, exp = load_configs()
     taps = a.taps.split(",") if a.taps else list(models[a.model]["tap"])
@@ -173,6 +186,14 @@ def main():
     names = a.variants.split(",") if a.variants else sorted(
         p.name for p in (root / a.model).iterdir() if p.name != "fp16" and (p / a.key).exists())
     var_all = {v: load_cell(root, a.model, v, a.key) for v in names}
+    if a.time_align:
+        ref_steps = int((run.get("sampler") or {}).get("n_action_steps") or 0)
+        for v in names:
+            vj = root / a.model / v / a.key / "run.json"
+            vs = int((json.loads(vj.read_text()).get("sampler") or {}).get("n_action_steps") or 0) if vj.exists() else 0
+            if ref_steps and vs and vs < ref_steps and ref_steps % vs == 0:
+                var_all[v] = [time_align(e, ref_steps // vs) for e in var_all[v]]
+                print(f"time-aligned {v}: kept every {ref_steps // vs}-th query ({vs} vs {ref_steps} actions per call)")
     var_test = {v: {key(e): e for e in var_all[v] if role(e) == "test"} for v in names}
     # the changed policy's own calibration pool: repair slots + top-ups (never test), if they were run
     var_pool = {v: [e for e in var_all[v] if role(e) == "repair" or TOPUP_OFFSET <= e.meta["episode_idx"] < EXT_OFFSET]

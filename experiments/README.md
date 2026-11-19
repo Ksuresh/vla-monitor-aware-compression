@@ -48,6 +48,14 @@ Headline (Mahalanobis, false alarms on all successes, fp16 -> changed policy):
 
 Under 5 actions per call only the output-level monitor (action-chunk consistency) moves: 0.00 -> 0.19 on joint successes.
 
+## Planned: null-change control and time-aligned re-scoring (SmolVLA)
+
+- Stage-2 notebook PART 8 runs `fp16_reseed` (`configs/experiment.yaml`): the fp16 policy again on the 140 test slots,
+  same tasks and initial states, different random draws (`seed_offset`). It sets the noise floor for paired outcome
+  flips and for monitor drift between two runs of the same policy.
+- `scripts/resplit.py --time_align` (CPU notebook cell 3) re-scores 5 actions per call keeping every 2nd query, so the
+  alarm band is compared at the same environment steps as the reference (the band is indexed by query).
+
 ## SmolVLA CPU re-scoring (`smolvla/cpu_all/`)
 
 `vla-assure/notebooks/VLA_resplit_cpu.ipynb`, run on Kaggle CPU (18 Nov 2026) with the four stage-2 outputs and
