@@ -45,8 +45,12 @@ def code_ok(root):
 def newest(root):
     root = pathlib.Path(root)
     f, y = root / "scripts/shadow_check.py", root / "configs/experiment.yaml"
+    v, c = root / "src/assure/variants.py", root / "scripts/01_collect.py"
+    # the dataset may hold several unpacked copies (e.g. "vla-assure (1)", "vla-assure (2)"): accept only the newest code,
+    # which has the real low-bit path (apply_bnb) and the null control (seed_offset)
     return (f.exists() and "all_taps" in f.read_text() and y.exists() and "w4_lm" in y.read_text()
-            and (root / "scripts/resplit.py").exists())
+            and (root / "scripts/resplit.py").exists() and v.exists() and "def apply_bnb" in v.read_text()
+            and c.exists() and "seed_offset" in c.read_text())
 
 if CODE.exists() and not (code_ok(CODE) and newest(CODE)):
     shutil.rmtree(CODE)
@@ -55,7 +59,7 @@ if not CODE.exists():
                     glob.glob("/kaggle/input/**/src/assure/adapters/lerobot_adapter.py", recursive=True)})
     trees = [t for t in trees if newest(t)]
     if not trees:
-        raise FileNotFoundError("No vla-assure copy with the stage-2 variants (w4_lm + resplit.py) under /kaggle/input: "
+        raise FileNotFoundError("No vla-assure copy with apply_bnb and seed_offset under /kaggle/input: "
                                 "upload the newest vla-assure.zip as a dataset version and attach it")
     print("Using unpacked dataset", trees[0])
     shutil.copytree(trees[0], CODE, symlinks=False)
