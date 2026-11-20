@@ -14,6 +14,7 @@ HERE = Path(__file__).resolve().parent
 SOURCES = {  # change -> stage-2 part that holds its final scoring
     "w4": "stage2_part4", "w4_lm": "stage2_part1", "w8": "stage2_part2",
     "cfg_denoise5": "stage2_part3", "cfg_steps5": "stage2_part4",
+    "real_nf4": "stage2_part5",   # real 4-bit inference (bitsandbytes NF4 kernels) of the action expert
 }
 rows = []
 for change, part in SOURCES.items():

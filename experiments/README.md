@@ -70,12 +70,18 @@ W4-LM has 24). `python experiments/cpu_all_summary.py` prints the two summaries 
   rate falls from 0.082 to 0.044 and the detection lost on valid monitors from 0.061 (max 0.31) to 0.024 (max 0.09);
   in PAC mode there is no gain, because the PAC rank stays at the maximum until 76 successes.
 
-## Planned: real low-bit inference (SmolVLA)
+## Real low-bit inference (SmolVLA, `smolvla/stage2_part5/`)
 
-`vla-assure/notebooks/VLA_stage2_variants.ipynb` PART 5-7 run the expert (and optionally the language model + expert)
-with real bitsandbytes NF4 kernels (`real_nf4`, `real_nf4_lm` in `configs/experiment.yaml`; `apply_bnb` in
-`src/assure/variants.py`): weights stored in 4 bits and dequantized inside the kernel, unlike the simulated RTN
-variants above. Results will be added as `smolvla/stage2_part5/` etc.
+Stage-2 notebook PART 5 (20 Nov 2026): the action expert run with real bitsandbytes NF4 kernels (`real_nf4`; `apply_bnb`
+in `src/assure/variants.py`; 224 linear layers, block size 64; packed weights stored in the layer dtype): weights stored
+in 4 bits and dequantized inside the kernel, unlike the simulated RTN variants. Expert linear weights 199.9 MB -> 48.3 MB;
+peak GPU memory 1.16 GiB (simulated runs 1.30 GiB); median query latency 1.32 s on a T4 (simulated W8 0.91 s).
+
+| | fp16 | real NF4 |
+|---|---|---|
+| Success (140 paired test slots) | 0.53 | 0.48 (17 new failures, 10 rescued; McNemar p = 0.25) |
+| Mahalanobis VL-only / both / expert-only | 0.03 / 0.04 / 0.01 | 0.01 / 0.09 / 0.85 |
+| RND VL-only / both / expert-only | 0.04 / 0.05 / 0.03 | 0.07 / 0.16 / 0.82 |
 
 ## pi0.5 (`lerobot/pi05_libero_finetuned`, bfloat16), in progress
 
