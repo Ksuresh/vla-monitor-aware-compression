@@ -32,6 +32,7 @@ def test_apply_bnb_scope_and_storage():
     rep = apply_bnb(q, 4, ["lm_expert.*"])
     assert rep["linear_replaced"] == 2 and isinstance(q.vlm[0], nn.Linear)
     assert isinstance(q.lm_expert[0], bnb.nn.Linear4bit)
+    assert q.lm_expert[0].weight.dtype == torch.float32      # storage dtype matches the layer (LeRobot casts to it)
     assert rep["scoped_linear_weight_bytes_after"] * 4 < rep["scoped_linear_weight_bytes_before"]
     with torch.no_grad():
         out = q(x)

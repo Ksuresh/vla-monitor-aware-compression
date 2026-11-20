@@ -49,7 +49,7 @@ def newest(root):
     # the dataset may hold several unpacked copies (e.g. "vla-assure (1)", "vla-assure (2)"): accept only the newest code,
     # which has the real low-bit path (apply_bnb) and the null control (seed_offset)
     return (f.exists() and "all_taps" in f.read_text() and y.exists() and "w4_lm" in y.read_text()
-            and (root / "scripts/resplit.py").exists() and v.exists() and "def apply_bnb" in v.read_text()
+            and (root / "scripts/resplit.py").exists() and v.exists() and "quant_storage=dt" in v.read_text()
             and c.exists() and "seed_offset" in c.read_text())
 
 if CODE.exists() and not (code_ok(CODE) and newest(CODE)):
@@ -59,7 +59,7 @@ if not CODE.exists():
                     glob.glob("/kaggle/input/**/src/assure/adapters/lerobot_adapter.py", recursive=True)})
     trees = [t for t in trees if newest(t)]
     if not trees:
-        raise FileNotFoundError("No vla-assure copy with apply_bnb and seed_offset under /kaggle/input: "
+        raise FileNotFoundError("No vla-assure copy with the fixed apply_bnb (quant_storage=dt) and seed_offset under /kaggle/input: "
                                 "upload the newest vla-assure.zip as a dataset version and attach it")
     print("Using unpacked dataset", trees[0])
     shutil.copytree(trees[0], CODE, symlinks=False)

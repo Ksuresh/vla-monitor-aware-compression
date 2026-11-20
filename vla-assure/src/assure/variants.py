@@ -256,9 +256,12 @@ def apply_bnb(policy: nn.Module, bits: int, include: list[str] | None = None, qu
             w = child.weight.data.detach().to("cpu")
             bytes_before += w.numel() * w.element_size()
             if bits == 4:
+                # The packed 4-bit data is stored in a tensor of the layer's own dtype (quant_storage=dt): LeRobot casts
+                # activations to `proj.weight.dtype`, which would be uint8 with the default storage. Memory is unchanged.
                 new = bnb.nn.Linear4bit(child.in_features, child.out_features, bias=has_bias, compute_dtype=dt,
-                                        quant_type=quant_type, quant_storage=torch.uint8)
-                new.weight = bnb.nn.Params4bit(w, requires_grad=False, quant_type=quant_type, blocksize=blocksize)
+                                        quant_type=quant_type, quant_storage=dt)
+                new.weight = bnb.nn.Params4bit(w.to(dt), requires_grad=False, quant_type=quant_type, blocksize=blocksize,
+                                               quant_storage=dt)
             elif bits == 8:
                 new = bnb.nn.Linear8bitLt(child.in_features, child.out_features, bias=has_bias,
                                           has_fp16_weights=False, threshold=6.0)
