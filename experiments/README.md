@@ -48,13 +48,20 @@ Headline (Mahalanobis, false alarms on all successes, fp16 -> changed policy):
 
 Under 5 actions per call only the output-level monitor (action-chunk consistency) moves: 0.00 -> 0.19 on joint successes.
 
-## Planned: null-change control and time-aligned re-scoring (SmolVLA)
+## Null-change control (SmolVLA, `smolvla/stage2_part8/`)
 
-- Stage-2 notebook PART 8 runs `fp16_reseed` (`configs/experiment.yaml`): the fp16 policy again on the 140 test slots,
-  same tasks and initial states, different random draws (`seed_offset`). It sets the noise floor for paired outcome
-  flips and for monitor drift between two runs of the same policy.
-- `scripts/resplit.py --time_align` (CPU notebook cell 3) re-scores 5 actions per call keeping every 2nd query, so the
-  alarm band is compared at the same environment steps as the reference (the band is indexed by query).
+Stage-2 notebook PART 8 (20 Nov 2026): `fp16_reseed`, the unchanged fp16 policy on the 140 test slots with the same tasks
+and initial states but different random draws (`seed_offset` 100000). It sets the noise floor for paired comparisons:
+61 of 140 outcomes flipped (32 / 29; McNemar p = 0.80), and the inherited monitors' false-alarm rates on all successes
+moved by at most +0.10 (largest: both-layer RND 0.05 -> 0.16; expert-only Mahalanobis 0.01 -> 0.09).
+
+## Shadow replay of real NF4 (`smolvla/stage2_part6/`)
+
+Stage-2 notebook PART 6: the fp16 policy on 40 repair slots (25 successes) with the real NF4 expert as a shadow.
+Direct effect on Mahalanobis: VL-only +0.00 (0.0 SD), both layers +0.04 [0.00, 0.10] (0.25 SD), expert-only
++0.84 [0.70, 0.96] (3.3 SD); closed-loop changes (PART 5) -0.01, +0.05, +0.84.
+
+The time-aligned re-scoring of 5 actions per call (`scripts/resplit.py --time_align`) is run by the CPU notebook.
 
 ## SmolVLA CPU re-scoring (`smolvla/cpu_all/`)
 

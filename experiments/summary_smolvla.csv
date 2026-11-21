@@ -53,3 +53,12 @@ real_nf4,both_layers,safe_mlp,74,67,0.284,"[0.185, 0.401]",0.269,"[0.168, 0.391]
 real_nf4,expert_only,mahalanobis,74,67,0.014,"[0.0, 0.073]",0.851,"[0.743, 0.926]",0.7,57,0.0,0.877,0.463,0.045,0.851,0.998,0.996,1.0,17,57,17,10,56,0.248,smolvla/stage2_part5/resplit_part5_expert_only.json
 real_nf4,expert_only,rnd,74,67,0.027,"[0.003, 0.094]",0.821,"[0.708, 0.904]",0.7,57,0.0,0.842,0.597,0.09,0.821,0.997,0.987,1.0,17,57,17,10,56,0.248,smolvla/stage2_part5/resplit_part5_expert_only.json
 real_nf4,expert_only,safe_mlp,74,67,0.284,"[0.185, 0.401]",0.284,"[0.18, 0.407]",0.4,57,0.316,0.263,0.03,0.0,0.239,0.888,0.856,1.0,17,57,17,10,56,0.248,smolvla/stage2_part5/resplit_part5_expert_only.json
+fp16_reseed,vlm_only,mahalanobis,74,71,0.027,"[0.003, 0.094]",0.028,"[0.003, 0.098]",0.0,42,0.0,0.048,0.028,0.014,0.099,0.978,0.978,0.875,32,42,32,29,37,0.798,smolvla/stage2_part8/resplit_part8_vlm_only.json
+fp16_reseed,vlm_only,rnd,74,71,0.041,"[0.008, 0.114]",0.056,"[0.016, 0.138]",0.0,42,0.024,0.095,0.07,0.042,0.113,0.989,0.982,0.875,32,42,32,29,37,0.798,smolvla/stage2_part8/resplit_part8_vlm_only.json
+fp16_reseed,vlm_only,safe_mlp,74,71,0.203,"[0.118, 0.312]",0.211,"[0.123, 0.324]",0.241,42,0.167,0.19,0.113,0.014,0.211,0.817,0.842,0.938,32,42,32,29,37,0.798,smolvla/stage2_part8/resplit_part8_vlm_only.json
+fp16_reseed,both_layers,mahalanobis,74,71,0.041,"[0.008, 0.114]",0.056,"[0.016, 0.138]",0.069,42,0.0,0.048,0.056,0.014,0.113,0.993,0.994,1.0,32,42,32,29,37,0.798,smolvla/stage2_part8/resplit_part8_both_layers.json
+fp16_reseed,both_layers,rnd,74,71,0.054,"[0.015, 0.133]",0.155,"[0.08, 0.26]",0.138,42,0.0,0.167,0.07,0.042,0.113,0.995,0.991,1.0,32,42,32,29,37,0.798,smolvla/stage2_part8/resplit_part8_both_layers.json
+fp16_reseed,both_layers,safe_mlp,74,71,0.284,"[0.185, 0.401]",0.296,"[0.193, 0.416]",0.276,42,0.214,0.31,0.07,0.0,0.268,0.89,0.843,0.969,32,42,32,29,37,0.798,smolvla/stage2_part8/resplit_part8_both_layers.json
+fp16_reseed,expert_only,mahalanobis,74,71,0.014,"[0.0, 0.073]",0.085,"[0.032, 0.175]",0.138,42,0.0,0.048,0.07,0.014,0.169,0.998,0.998,1.0,32,42,32,29,37,0.798,smolvla/stage2_part8/resplit_part8_expert_only.json
+fp16_reseed,expert_only,rnd,74,71,0.027,"[0.003, 0.094]",0.113,"[0.05, 0.21]",0.172,42,0.0,0.071,0.085,0.014,0.127,0.997,1.0,1.0,32,42,32,29,37,0.798,smolvla/stage2_part8/resplit_part8_expert_only.json
+fp16_reseed,expert_only,safe_mlp,74,71,0.284,"[0.185, 0.401]",0.254,"[0.158, 0.371]",0.345,42,0.214,0.19,0.085,0.014,0.183,0.888,0.788,0.969,32,42,32,29,37,0.798,smolvla/stage2_part8/resplit_part8_expert_only.json
