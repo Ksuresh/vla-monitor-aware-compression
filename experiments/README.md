@@ -61,7 +61,16 @@ Stage-2 notebook PART 6: the fp16 policy on 40 repair slots (25 successes) with 
 Direct effect on Mahalanobis: VL-only +0.00 (0.0 SD), both layers +0.04 [0.00, 0.10] (0.25 SD), expert-only
 +0.84 [0.70, 0.96] (3.3 SD); closed-loop changes (PART 5) -0.01, +0.05, +0.84.
 
-The time-aligned re-scoring of 5 actions per call (`scripts/resplit.py --time_align`) is run by the CPU notebook.
+## Time-aligned re-scoring of 5 actions per call (`smolvla/cpu_aligned/`)
+
+5 actions per call queries the policy twice as often as the reference (5 vs 10 actions per chunk), so query index k falls at a
+different environment step and each query-indexed band is compared at a different time in the task.
+`scripts/resplit.py --time_align` keeps every 2nd query of the changed policy so each band is compared at the same environment
+step as the reference. Produced by cell 3 of `VLA_resplit_cpu.ipynb` (Kaggle CPU, 19 Nov 2026), one file per placement.
+
+SAFE-style probe, fixed split, changed vs reference (unaligned changes in `summary_smolvla.csv`: +0.10 to +0.13):
+VL-only 0.24 vs 0.22, both layers 0.20 vs 0.16, expert-only 0.19 vs 0.20; re-split medians 0.06 vs 0.07, 0.05 vs 0.07,
+0.08 vs 0.09. Mahalanobis and RND stay at or below 0.08. These are re-scorings of the recorded episodes, not recalibrations.
 
 ## SmolVLA CPU re-scoring (`smolvla/cpu_all/`)
 
