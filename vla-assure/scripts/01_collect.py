@@ -113,7 +113,8 @@ def main():
             n_pool += ok_ and in_pool(t, e)
             n += 1
             return
-        ep = s.rollout_episode(t, e, seed=trial_seed(exp["seed"], t, e))
+        # Null-change control: a variant may shift only the random draws (same weights, task and initial state)
+        ep = s.rollout_episode(t, e, seed=trial_seed(exp["seed"], t, e) + int(var.get("seed_offset", 0)))
         ep.save(out)
         n_ok += ep.success
         n_pool += bool(ep.success) and in_pool(t, e)

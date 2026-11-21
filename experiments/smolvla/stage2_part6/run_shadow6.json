@@ -1,0 +1,193 @@
+{
+  "kind": "reference",
+  "model": "smolvla",
+  "variant": "fp16",
+  "suite": "libero_spatial",
+  "checkpoint": "HuggingFaceVLA/smolvla_libero",
+  "dtype": "default",
+  "shadows": {
+    "real_nf4": {
+      "kind": "bnb_real",
+      "bits": 4,
+      "quant_type": "nf4",
+      "blocksize": 64,
+      "real_kernels": true,
+      "linear_replaced": 224,
+      "param_fraction_quantized": 0.1738,
+      "scoped_linear_weight_bytes_before": 199884800,
+      "scoped_linear_weight_bytes_after": 48332800,
+      "quant_scope": [
+        "model.vlm_with_expert.lm_expert.*"
+      ],
+      "model": "smolvla",
+      "variant": "real_nf4",
+      "suite": "libero_spatial",
+      "checkpoint": "HuggingFaceVLA/smolvla_libero",
+      "dtype": "default"
+    }
+  },
+  "sampler": {
+    "num_steps": 10,
+    "n_action_steps": 10,
+    "chunk_size": 50,
+    "alt_samples": 0,
+    "noise_seeding": "torch reseeded per trial; shadows/alt samples on forked RNG"
+  },
+  "pool_successes": 19,
+  "topup_rule": {
+    "target": 0,
+    "max_rounds": 40,
+    "per_round": 10
+  },
+  "episodes": 30,
+  "success_rate": 0.6333333333333333,
+  "seconds": 2815.8,
+  "tap_fired": {
+    "vlm_last": 427,
+    "expert_last": 4270
+  },
+  "episodes_per_task": 40,
+  "tasks": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "n_reference": 40,
+  "split": {
+    "train": 0.25,
+    "calib": 0.2,
+    "repair": 0.2,
+    "test": 0.35
+  },
+  "topup_rounds": 0,
+  "trial_ids": {
+    "0": [
+      7,
+      8,
+      17
+    ],
+    "1": [
+      16,
+      21,
+      22
+    ],
+    "2": [
+      3,
+      5,
+      10
+    ],
+    "3": [
+      5,
+      7,
+      17
+    ],
+    "4": [
+      6,
+      10,
+      13
+    ],
+    "5": [
+      0,
+      3,
+      6
+    ],
+    "6": [
+      10,
+      11,
+      13
+    ],
+    "7": [
+      0,
+      2,
+      10
+    ],
+    "8": [
+      14,
+      19,
+      22
+    ],
+    "9": [
+      5,
+      10,
+      14
+    ]
+  },
+  "extension_per_task": 0,
+  "role_counts_per_task": {
+    "0": {
+      "train": 7,
+      "calib": 11,
+      "repair": 10,
+      "test": 12
+    },
+    "1": {
+      "train": 13,
+      "calib": 6,
+      "repair": 3,
+      "test": 18
+    },
+    "2": {
+      "train": 9,
+      "calib": 10,
+      "repair": 11,
+      "test": 10
+    },
+    "3": {
+      "train": 10,
+      "calib": 7,
+      "repair": 10,
+      "test": 13
+    },
+    "4": {
+      "train": 9,
+      "calib": 10,
+      "repair": 7,
+      "test": 14
+    },
+    "5": {
+      "train": 11,
+      "calib": 10,
+      "repair": 7,
+      "test": 12
+    },
+    "6": {
+      "train": 8,
+      "calib": 4,
+      "repair": 9,
+      "test": 19
+    },
+    "7": {
+      "train": 12,
+      "calib": 6,
+      "repair": 7,
+      "test": 15
+    },
+    "8": {
+      "train": 11,
+      "calib": 8,
+      "repair": 8,
+      "test": 13
+    },
+    "9": {
+      "train": 10,
+      "calib": 8,
+      "repair": 8,
+      "test": 14
+    }
+  },
+  "condition": "nominal",
+  "shadow_names": [
+    "real_nf4"
+  ],
+  "note_peak_mem": "includes shadow copies",
+  "peak_gpu_mem_gib": 2.31917142868042,
+  "query_latency_median_s": 0.9204554829993867,
+  "query_latency_p95_s": 0.9646099060000779
+}

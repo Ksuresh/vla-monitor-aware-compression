@@ -91,8 +91,10 @@ class LoadedEpisode:
 
     @property
     def pair_key(self) -> tuple:
-        """Identifies the paired trial across variants: same task, initial state and seed."""
-        return (self.meta["task_id"], self.meta["episode_idx"], self.meta["seed"])
+        """Identifies the paired trial across variants: same task slot and therefore the same initial state.
+        All variants use the slot's seed except the null-change control (fp16_reseed), which shifts only the
+        random draws, so the seed is deliberately not part of the key."""
+        return (self.meta["task_id"], self.meta["episode_idx"])
 
     def shadows(self) -> list[str]:
         return sorted({k.split(":")[1] for k in self.feats if k.startswith("shadow:")})

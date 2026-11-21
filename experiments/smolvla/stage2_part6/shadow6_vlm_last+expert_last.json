@@ -1,0 +1,41 @@
+{
+  "n_shadow": 40,
+  "n_success": 25,
+  "variants": {
+    "real_nf4": {
+      "feature_drift": {
+        "vlm_last": 0.0,
+        "expert_last": 0.2950201630592346
+      },
+      "action_div": 0.6826776847243309,
+      "monitors": {
+        "mahalanobis#A": {
+          "score_shift_sd": 0.13806004438497066,
+          "fpr_fp16": 0.12,
+          "fpr_shadow": 0.12,
+          "d_fpr": 0.0,
+          "d_fpr_90": [
+            0.0,
+            0.0
+          ],
+          "tpr_fp16": 0.2,
+          "tpr_shadow": 0.26666666666666666,
+          "score_up_share": 0.8
+        },
+        "mahalanobis": {
+          "score_shift_sd": 0.2488741205373134,
+          "fpr_fp16": 0.12,
+          "fpr_shadow": 0.16,
+          "d_fpr": 0.04,
+          "d_fpr_90": [
+            0.0,
+            0.1
+          ],
+          "tpr_fp16": 1.0,
+          "tpr_shadow": 1.0,
+          "score_up_share": 0.76
+        }
+      }
+    }
+  }
+}

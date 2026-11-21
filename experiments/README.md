@@ -1,6 +1,6 @@
 # Experiment results: Calibrated Until Changed
 
-Results behind the paper *Calibrated Until Changed: Keeping Robot Failure Monitors Reliable After Model Compression*.
+Results behind the paper *Calibrated Until Changed: Model Changes Silently Invalidate Robot Failure Monitors*.
 Code in `../vla-assure/`; the Kaggle notebooks that produced every folder below are in
 `../vla-assure/notebooks/` (built by the scripts in `notebooks/builders/`).
 
@@ -12,7 +12,7 @@ files here with `python experiments/summarize.py`.
 | Item | Value |
 |---|---|
 | Benchmark | LIBERO, Kaggle 2x T4, MuJoCo EGL rendering, LeRobot 0.6.1 |
-| Design | Pre-registered slot partition per task (seed fixed before any rollout): 25 % train, 20 % calib, 20 % repair, 35 % test; variants run the same test slots (paired) |
+| Design | One seeded random partition of all slots, pooled over tasks (seed fixed before any rollout; not registered with a third party): 25 % train, 20 % calib, 20 % repair, 35 % test; variants run the same test slots (paired). SmolVLA W4 (go/no-go) is exploratory; the primary measure was set after it |
 | Alarm | Functional conformal band (SAFE-style), alpha = 0.10, shape/threshold split max(10, ceil(N/2)) |
 | Monitors | Mahalanobis, RND, SAFE-style MLP probe, at three placements (VL-only `vlm_last`, expert-only `expert_last`, both); controls: action-chunk consistency (`acc`), pixel Mahalanobis (`ext_mahalanobis`) |
 | Primary metric | Inherited monitor's false-alarm rate on all successes of each policy, exact 95 % Clopper-Pearson interval |
@@ -25,7 +25,7 @@ R = 40 slots per task (400 reference episodes, 140 paired test slots); fp16 test
 
 | Folder | Contents |
 |---|---|
-| `smolvla/gonogo/` | Go/no-go run: fp16 reference, W4 on the action expert, two 15 % mixed-precision protection rules; block sensitivity (`sensitivity.json`), per-trial alarms for both-layer Mahalanobis (`eval_trials.csv`) |
+| `smolvla/gonogo/` | Exploratory go/no-go run: fp16 reference, W4 on the action expert, two 15 % mixed-precision protection rules (analysed only with the go/no-go's joint-success readout); block sensitivity (`sensitivity.json`), per-trial alarms for both-layer Mahalanobis (`eval_trials.csv`), W4 shadow replay on 32 test-slot episodes (`shadow_check.json`) |
 | `smolvla/stage2_part1/` | W4 on language model + expert (`w4_lm`); shadow replay of `w4_lm`, `w8`, `cfg_denoise5` on repair slots (`shadow2_*.json`) |
 | `smolvla/stage2_part2/` | W8 on the action expert, test + repair slots |
 | `smolvla/stage2_part3/` | 5 denoising steps (`cfg_denoise5`, same weights) |
@@ -48,6 +48,21 @@ Headline (Mahalanobis, false alarms on all successes, fp16 -> changed policy):
 
 Under 5 actions per call only the output-level monitor (action-chunk consistency) moves: 0.00 -> 0.19 on joint successes.
 
+## Null-change control (SmolVLA, `smolvla/stage2_part8/`)
+
+Stage-2 notebook PART 8 (20 Nov 2026): `fp16_reseed`, the unchanged fp16 policy on the 140 test slots with the same tasks
+and initial states but different random draws (`seed_offset` 100000). It sets the noise floor for paired comparisons:
+61 of 140 outcomes flipped (32 / 29; McNemar p = 0.80), and the inherited monitors' false-alarm rates on all successes
+moved by at most +0.10 (largest: both-layer RND 0.05 -> 0.16; expert-only Mahalanobis 0.01 -> 0.09).
+
+## Shadow replay of real NF4 (`smolvla/stage2_part6/`)
+
+Stage-2 notebook PART 6: the fp16 policy on 40 repair slots (25 successes) with the real NF4 expert as a shadow.
+Direct effect on Mahalanobis: VL-only +0.00 (0.0 SD), both layers +0.04 [0.00, 0.10] (0.25 SD), expert-only
++0.84 [0.70, 0.96] (3.3 SD); closed-loop changes (PART 5) -0.01, +0.05, +0.84.
+
+The time-aligned re-scoring of 5 actions per call (`scripts/resplit.py --time_align`) is run by the CPU notebook.
+
 ## SmolVLA CPU re-scoring (`smolvla/cpu_all/`)
 
 `vla-assure/notebooks/VLA_resplit_cpu.ipynb`, run on Kaggle CPU (18 Nov 2026) with the four stage-2 outputs and
@@ -62,12 +77,18 @@ W4-LM has 24). `python experiments/cpu_all_summary.py` prints the two summaries 
   rate falls from 0.082 to 0.044 and the detection lost on valid monitors from 0.061 (max 0.31) to 0.024 (max 0.09);
   in PAC mode there is no gain, because the PAC rank stays at the maximum until 76 successes.
 
-## Planned: real low-bit inference (SmolVLA)
+## Real low-bit inference (SmolVLA, `smolvla/stage2_part5/`)
 
-`vla-assure/notebooks/VLA_stage2_variants.ipynb` PART 5-7 run the expert (and optionally the language model + expert)
-with real bitsandbytes NF4 kernels (`real_nf4`, `real_nf4_lm` in `configs/experiment.yaml`; `apply_bnb` in
-`src/assure/variants.py`): weights stored in 4 bits and dequantized inside the kernel, unlike the simulated RTN
-variants above. Results will be added as `smolvla/stage2_part5/` etc.
+Stage-2 notebook PART 5 (20 Nov 2026): the action expert run with real bitsandbytes NF4 kernels (`real_nf4`; `apply_bnb`
+in `src/assure/variants.py`; 224 linear layers, block size 64; packed weights stored in the layer dtype): weights stored
+in 4 bits and dequantized inside the kernel, unlike the simulated RTN variants. Expert linear weights 199.9 MB -> 48.3 MB;
+peak GPU memory 1.16 GiB (simulated runs 1.30 GiB); median query latency 1.32 s on a T4 (simulated W8 0.91 s).
+
+| | fp16 | real NF4 |
+|---|---|---|
+| Success (140 paired test slots) | 0.53 | 0.48 (17 new failures, 10 rescued; McNemar p = 0.25) |
+| Mahalanobis VL-only / both / expert-only | 0.03 / 0.04 / 0.01 | 0.01 / 0.09 / 0.85 |
+| RND VL-only / both / expert-only | 0.04 / 0.05 / 0.03 | 0.07 / 0.16 / 0.82 |
 
 ## pi0.5 (`lerobot/pi05_libero_finetuned`, bfloat16), in progress
 

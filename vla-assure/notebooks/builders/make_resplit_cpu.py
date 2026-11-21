@@ -10,9 +10,11 @@ code = lambda s: cells.append({"cell_type": "code", "metadata": {}, "execution_c
                                 "source": s.strip("\n")})
 
 md("""
-# All SmolVLA results in one pass (CPU only): primary table, re-splits, release options incl. recalibration on all successes
-CPU only (Accelerator = **None**, Internet **On**), about 1-2 h. Inputs: the latest `vla-assure` dataset, dataset `gonogo-v5`, and the outputs of the four stage-2 versions (Add Input -> Notebook Output); not the go/no-go
-notebook (Version 8). No robot is run: this re-scores the saved episodes with 3 monitors x 3 placements.
+# SmolVLA re-scoring on CPU: all changes in one pass, and 5 actions per call with time-aligned bands
+CPU only (Accelerator = **None**, Internet **On**). Inputs: the latest `vla-assure` dataset (needs `time_align` in
+`scripts/resplit.py`), dataset `gonogo-v5`, and datasets made from the four stage-2 outputs (`stage2_part1` ... `stage2_part4`).
+No robot is run. Cell 2 (the full pass, ~3-4 h) already ran on 18 Nov 2026 and is off by default (`RUN_MAIN = False`);
+cell 3 (~20-40 min) re-scores 5 actions per call with the band compared at the same environment steps as the reference.
 """)
 code(r"""
 # 0. Python packages the re-scoring needs (Kaggle's image normally has them; installs only what is missing)
@@ -32,11 +34,11 @@ import glob, os, pathlib, shutil, subprocess, sys
 CODE = pathlib.Path("/root/vla-assure")
 def newest(root):
     f, r = pathlib.Path(root) / "scripts/shadow_check.py", pathlib.Path(root) / "scripts/resplit.py"
-    return f.exists() and "all_taps" in f.read_text() and r.exists() and "recal_all" in r.read_text()
+    return f.exists() and "all_taps" in f.read_text() and r.exists() and "time_align" in r.read_text()
 trees = sorted({str(pathlib.Path(p).parents[3]) for p in
                 glob.glob("/kaggle/input/**/src/assure/adapters/lerobot_adapter.py", recursive=True)})
 trees = [t for t in trees if newest(t)]
-assert trees, "attach the vla-assure dataset uploaded from the latest vla-assure.zip (needs recal_all in resplit.py)"
+assert trees, "attach the vla-assure dataset uploaded from the latest vla-assure.zip (needs time_align in resplit.py)"
 print("code:", trees[0])
 shutil.rmtree(CODE, ignore_errors=True); shutil.copytree(trees[0], CODE, symlinks=False)
 # merge every attached output: gonogo-v5 (fp16, w4) + the four stage-2 versions (w4_lm, w8, cfg_denoise5, cfg_steps5, w4 repair)
@@ -64,12 +66,28 @@ if (CODE / "results").exists() or (CODE / "results").is_symlink():
 os.chdir(CODE)
 """)
 code(r"""
-# 2. 20 random calibration re-splits x 3 placements x 3 monitors (test slots fixed). ~30-60 min on CPU
-for name, taps in (("expert_only", "expert_last"), ("both_layers", "vlm_last,expert_last"), ("vlm_only", "vlm_last")):
+# 2. 20 random calibration re-splits x 3 placements x 3 monitors (test slots fixed). ~3-4 h on CPU.
+#    Already run on 18 Nov 2026 (experiments/smolvla/cpu_all/): set RUN_MAIN = True only to repeat it.
+RUN_MAIN = False
+PLACES = (("expert_only", "expert_last"), ("both_layers", "vlm_last,expert_last"), ("vlm_only", "vlm_last"))
+if RUN_MAIN:
+    for name, taps in PLACES:
+        r = subprocess.run([sys.executable, "scripts/resplit.py", "--model", "smolvla", "--key", "libero_spatial",
+                            "--rollouts", str(ROLL), "--taps", taps, "--monitors", "mahalanobis,rnd,safe_mlp",
+                            "--variants", "w4,w4_lm,w8,cfg_denoise5,cfg_steps5", "--splits", "20",
+                            "--out", f"/kaggle/working/resplit_{name}.json"], capture_output=True, text=True)
+        print("#" * 20, name); print((r.stdout + r.stderr)[-20000:])
+        assert r.returncode == 0, name
+""")
+code(r"""
+# 3. 5 actions per call, time-aligned (~20-40 min): the alarm band is indexed by query, and with 5 actions per call
+#    query k happens at step 5k instead of 10k. Keeping every 2nd query compares the band at the same environment steps.
+for name, taps in PLACES:
     r = subprocess.run([sys.executable, "scripts/resplit.py", "--model", "smolvla", "--key", "libero_spatial",
                         "--rollouts", str(ROLL), "--taps", taps, "--monitors", "mahalanobis,rnd,safe_mlp",
-                        "--variants", "w4,w4_lm,w8,cfg_denoise5,cfg_steps5", "--splits", "20", "--out", f"/kaggle/working/resplit_{name}.json"], capture_output=True, text=True)
-    print("#" * 20, name); print((r.stdout + r.stderr)[-20000:])
+                        "--variants", "cfg_steps5", "--splits", "20", "--time_align",
+                        "--out", f"/kaggle/working/resplit_aligned_{name}.json"], capture_output=True, text=True)
+    print("#" * 20, name); print((r.stdout + r.stderr)[-6000:])
     assert r.returncode == 0, name
 import zipfile, glob
 with zipfile.ZipFile("/kaggle/working/smolvla_all.zip", "w") as z:

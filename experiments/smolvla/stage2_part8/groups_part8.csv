@@ -1,0 +1,16 @@
+features,monitor,variant,success_fp16,success_var,joint_succ,FPR_fp16,FPR_var,n_new_failures,detect_NEW_failures
+both_layers,acc,fp16_reseed,0.529,0.507,42,0.024,0.024,32,0.531
+both_layers,ext_mahalanobis,fp16_reseed,0.529,0.507,42,0.071,0.214,32,0.344
+both_layers,mahalanobis,fp16_reseed,0.529,0.507,42,0.0,0.048,32,1.0
+both_layers,rnd,fp16_reseed,0.529,0.507,42,0.0,0.167,32,1.0
+both_layers,safe_mlp,fp16_reseed,0.529,0.507,42,0.214,0.31,32,0.969
+expert_only,acc,fp16_reseed,0.529,0.507,42,0.024,0.024,32,0.531
+expert_only,ext_mahalanobis,fp16_reseed,0.529,0.507,42,0.071,0.214,32,0.344
+expert_only,mahalanobis,fp16_reseed,0.529,0.507,42,0.0,0.048,32,1.0
+expert_only,rnd,fp16_reseed,0.529,0.507,42,0.0,0.071,32,1.0
+expert_only,safe_mlp,fp16_reseed,0.529,0.507,42,0.214,0.19,32,0.969
+vlm_only,acc,fp16_reseed,0.529,0.507,42,0.024,0.024,32,0.531
+vlm_only,ext_mahalanobis,fp16_reseed,0.529,0.507,42,0.071,0.214,32,0.344
+vlm_only,mahalanobis,fp16_reseed,0.529,0.507,42,0.0,0.048,32,0.875
+vlm_only,rnd,fp16_reseed,0.529,0.507,42,0.024,0.095,32,0.875
+vlm_only,safe_mlp,fp16_reseed,0.529,0.507,42,0.167,0.19,32,0.938
